@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة التحكم - نظام متابعة البلاغات الأمنية</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1E3A8A 0%, #075985 100%);
+    }
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      width: 16rem;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: -16rem;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      transition: right 0.3s ease;
+      z-index: 20;
+    }
+    .sidebar.active {
+      right: 0;
+    }
+    .dark .sidebar {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F5F7FA;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      color: #333;
+      transition: all 0.3s ease;
+    }
+    .dark .sidebar a, .dark .sidebar button {
+      color: #F5F7FA;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #4FC3F7;
+      color: white;
+    }
+    .dashboard-container {
+      max-width: 80rem;
+      margin: 2rem auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 3rem;
+      padding: 0 2rem;
+    }
+    .stat-card {
+      background: #F5F7FA;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .dark .stat-card {
+      background: #374151;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .progress-bar {
+      background: #e2e8f0;
+      border-radius: 0.5rem;
+      height: 1.5rem;
+      overflow: hidden;
+    }
+    .dark .progress-bar {
+      background: #4B5563;
+    }
+    .progress-bar div {
+      background: #4FC3F7;
+      height: 100%;
+      transition: width 1s ease-in-out;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0D47A1, #1565C0);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-primary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .chart-container {
+      max-width: 24rem;
+      margin: 0 auto;
+      height: 300px;
+    }
+    .map-container {
+      max-width: 100%;
+      height: 350px;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.5s ease-out;
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: -2rem;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .icon-container i {
+      font-size: 4rem;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <button id="toggle-sidebar" class="btn-primary fixed top-4 right-4 z-10 tooltip" data-tooltip="فتح/إغلاق القائمة">
+    <i class="fas fa-bars fa-2x"></i>
+  </button>
+  <div class="sidebar">
+    <div class="p-4 text-center">
+      <div class="bg-blue-900 text-white rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+        PP
+      </div>
+      <p class="text-gray-600 dark:text-gray-300">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+    </div>
+    <a href="dashboard.html" class="flex items-center"><i class="fas fa-tachometer-alt fa-2x mr-2"></i>لوحة التحكم</a>
+    <a href="new-report.html" class="flex items-center"><i class="fas fa-plus fa-2x mr-2"></i>بلاغ جديد</a>
+    <a href="reports-list.html" class="flex items-center"><i class="fas fa-list-alt fa-2x mr-2"></i>قائمة البلاغات</a>
+    <a href="report-details.html" class="flex items-center"><i class="fas fa-file-alt fa-2x mr-2"></i>تفاصيل البلاغ</a>
+    <a href="admin-dashboard.html" class="flex items-center"><i class="fas fa-user-shield fa-2x mr-2"></i>لوحة الإدارة</a>
+    <a href="archived-reports.html" class="flex items-center"><i class="fas fa-archive fa-2x mr-2"></i>البلاغات المؤرشفة</a>
+    <a href="#" id="logout-button" class="flex items-center"><i class="fas fa-sign-out-alt fa-2x mr-2"></i>تسجيل الخروج</a>
+    <button id="theme-toggle" class="flex items-center w-full"><i class="fas fa-moon fa-2x mr-2"></i>الوضع الليلي</button>
+  </div>
+  <div class="dashboard-container">
+    <div class="widget">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8">لوحة التحكم</h1>
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">إحصائيات سريعة</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+        <div class="stat-card flex flex-col items-center p-4 tooltip" data-tooltip="إجمالي البلاغات المسجلة">
+          <i class="fas fa-file-alt text-blue-400 text-[4rem] mb-4"></i>
+          <div class="text-center">
+            <p class="text-gray-600 dark:text-gray-300">إجمالي البلاغات</p>
+            <p class="text-4xl font-bold text-gray-800 dark:text-gray-200" id="total-reports">150</p>
+          </div>
+        </div>
+        <div class="stat-card flex flex-col items-center p-4 tooltip" data-tooltip="البلاغات التي تحتاج إلى معالجة">
+          <i class="fas fa-exclamation-circle text-yellow-400 text-[4rem] mb-4"></i>
+          <div class="text-center">
+            <p class="text-gray-600 dark:text-gray-300">البلاغات المفتوحة</p>
+            <p class="text-4xl font-bold text-gray-800 dark:text-gray-200" id="open-reports">30</p>
+          </div>
+        </div>
+        <div class="stat-card flex flex-col items-center p-4 tooltip" data-tooltip="البلاغات قيد المتابعة">
+          <i class="fas fa-cog text-blue-600 text-[4rem] mb-4"></i>
+          <div class="text-center">
+            <p class="text-gray-600 dark:text-gray-300">قيد المعالجة</p>
+            <p class="text-4xl font-bold text-gray-800 dark:text-gray-200" id="processing-reports">45</p>
+          </div>
+        </div>
+        <div class="stat-card flex flex-col items-center p-4 tooltip" data-tooltip="البلاغات التي تم حلها">
+          <i class="fas fa-check-circle text-green-500 text-[4rem] mb-4"></i>
+          <div class="text-center">
+            <p class="text-gray-600 dark:text-gray-300">البلاغات المغلقة</p>
+            <p class="text-4xl font-bold text-gray-800 dark:text-gray-200" id="closed-reports">75</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="widget">
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">توزيع الحالات</h2>
+      <div class="space-y-8">
+        <div>
+          <p class="text-gray-600 dark:text-gray-300 mb-2">مفتوح: <span id="open-progress">20%</span></p>
+          <div class="progress-bar"><div id="open-progress-bar" style="width: 20%;"></div></div>
+        </div>
+        <div>
+          <p class="text-gray-600 dark:text-gray-300 mb-2">قيد المعالجة: <span id="processing-progress">30%</span></p>
+          <div class="progress-bar"><div id="processing-progress-bar" style="width: 30%;"></div></div>
+        </div>
+        <div>
+          <p class="text-gray-600 dark:text-gray-300 mb-2">مغلق: <span id="closed-progress">50%</span></p>
+          <div class="progress-bar"><div id="closed-progress-bar" style="width: 50%;"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="widget">
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">تصنيف البلاغات حسب النوع</h2>
+      <div class="chart-container">
+        <canvas id="reportTypeChart"></canvas>
+      </div>
+    </div>
+    <div class="widget">
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">مواقع البلاغات</h2>
+      <div class="map-container" id="reportMap"></div>
+    </div>
+  </div>
+  <footer class="mt-8 text-white text-center text-xl">
+    إعداد وتصميم المهندس عمر أيمن عودة | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300">تواصل مع الدعم</a>
+  </footer>
+
+  <script>
+    // إعداد وتصميم المهندس عمر أيمن عودة
+    // Check if user is logged in
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    } else {
+      const userName = localStorage.getItem('userName') || 'المستخدم';
+      document.getElementById('user-name').textContent = userName;
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.innerHTML = document.body.classList.contains('dark') ? '<i class="fas fa-sun fa-2x mr-2"></i>الوضع النهاري' : '<i class="fas fa-moon fa-2x mr-2"></i>الوضع الليلي';
+      updateChartColors();
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun fa-2x mr-2"></i>الوضع النهاري';
+    }
+
+    // Sidebar Toggle
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const sidebar = document.querySelector('.sidebar');
+    toggleSidebar.addEventListener('click', () => {
+      sidebar.classList.toggle('active');
+    });
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Load saved statistics or set defaults
+    const stats = JSON.parse(localStorage.getItem('dashboardStats')) || {
+      totalReports: 150,
+      openReports: 30,
+      processingReports: 45,
+      closedReports: 75,
+      openProgress: 20,
+      processingProgress: 30,
+      closedProgress: 50
+    };
+
+    // Update DOM with statistics
+    function updateStats() {
+      document.getElementById('total-reports').textContent = stats.totalReports;
+      document.getElementById('open-reports').textContent = stats.openReports;
+      document.getElementById('processing-reports').textContent = stats.processingReports;
+      document.getElementById('closed-reports').textContent = stats.closedReports;
+      document.getElementById('open-progress').textContent = `${stats.openProgress}%`;
+      document.getElementById('processing-progress').textContent = `${stats.processingProgress}%`;
+      document.getElementById('closed-progress').textContent = `${stats.closedProgress}%`;
+      document.getElementById('open-progress-bar').style.width = `${stats.openProgress}%`;
+      document.getElementById('processing-progress-bar').style.width = `${stats.processingProgress}%`;
+      document.getElementById('closed-progress-bar').style.width = `${stats.closedProgress}%`;
+    }
+
+    // Save statistics to localStorage
+    function saveStats() {
+      localStorage.setItem('dashboardStats', JSON.stringify(stats));
+    }
+
+    // Initialize statistics
+    updateStats();
+
+    // Simulate updating stats (for demo purposes)
+    function updateDashboardStats(newStats) {
+      stats.totalReports = newStats.totalReports || stats.totalReports;
+      stats.openReports = newStats.openReports || stats.openReports;
+      stats.processingReports = newStats.processingReports || stats.processingReports;
+      stats.closedReports = newStats.closedReports || stats.closedReports;
+      stats.openProgress = newStats.openProgress || stats.openProgress;
+      stats.processingProgress = newStats.processingProgress || stats.processingProgress;
+      stats.closedProgress = newStats.closedProgress || stats.closedProgress;
+      updateStats();
+      saveStats();
+      showNotification('تم تحديث الإحصائيات بنجاح!', 'success');
+    }
+
+    // Pie Chart
+    let reportTypeChart;
+    function initializeChart() {
+      const ctx = document.getElementById('reportTypeChart').getContext('2d');
+      reportTypeChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['مرور', 'جنائي', 'مخالفات', 'إداري', 'آخر'],
+          datasets: [{
+            data: [40, 30, 20, 15, 45],
+            backgroundColor: ['#0D47A1', '#4FC3F7', '#FFC107', '#4CAF50', '#F5F7FA'],
+            borderColor: '#FFFFFF',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { 
+                font: { size: 14, family: 'Cairo' }, 
+                color: document.body.classList.contains('dark') ? '#F5F7FA' : '#333333' 
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function updateChartColors() {
+      reportTypeChart.options.plugins.legend.labels.color = document.body.classList.contains('dark') ? '#F5F7FA' : '#333333';
+      reportTypeChart.update();
+    }
+
+    initializeChart();
+
+    // Interactive Map (Ramallah)
+    const map = L.map('reportMap').setView([31.904, 35.204], 13); // Ramallah center
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    const markers = JSON.parse(localStorage.getItem('mapMarkers')) || [
+      { lat: 31.903, lng: 35.203, title: 'حادث مروري في ساحة المنارة', type: 'traffic' },
+      { lat: 31.910, lng: 35.210, title: 'سرقة في شارع البيرة الرئيسي', type: 'criminal' },
+      { lat: 31.898, lng: 35.195, title: 'مخالفة مرورية في قلنديا', type: 'violations' },
+      { lat: 31.905, lng: 35.200, title: 'اضطراب عام في وسط المدينة', type: 'other' },
+      { lat: 31.900, lng: 35.207, title: 'شكوى إدارية في حي الطيرة', type: 'administrative' },
+      { lat: 31.906, lng: 35.205, title: 'حادث في شارع رام الله الرئيسي', type: 'traffic' }
+    ];
+    markers.forEach(m => {
+      L.marker([m.lat, m.lng]).addTo(map)
+        .bindPopup(`<b>${m.title}</b>`);
+    });
+
+    // Save markers to localStorage
+    function saveMarkers() {
+      localStorage.setItem('mapMarkers', JSON.stringify(markers));
+    }
+
+    // Logout
+    document.getElementById('logout-button').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('militaryNumber');
+      showNotification('تم تسجيل الخروج بنجاح!', 'success');
+      setTimeout(() => window.location.href = 'index.html', 1000);
+    });
+
+    // Particle Background
+    const canvas = document.getElementById('particles');
+    const ctx2 = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: Math.random() * 0.5 - 0.25,
+        vy: Math.random() * 0.5 - 0.25
+      });
+    }
+    function animateParticles() {
+      ctx2.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx2.beginPath();
+        ctx2.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx2.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx2.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+  </script>
+</body>
+</html>
