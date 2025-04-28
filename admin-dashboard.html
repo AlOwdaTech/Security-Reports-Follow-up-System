@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة الإدارة - نظام متابعة البلاغات الأمنية</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1E3A8A 0%, #075985 100%);
+    }
+    [lang="en"] {
+      direction: ltr;
+      font-family: 'Arial', sans-serif;
+    }
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      width: 16rem;
+      max-width: 80vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: -100%;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      transition: right 0.3s ease, transform 0.3s ease;
+      z-index: 20;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      right: 0;
+      transform: translateX(0);
+    }
+    .dark .sidebar {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F5F7FA;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      color: #333;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      transition: all 0.3s ease;
+    }
+    .dark .sidebar a, .dark .sidebar button {
+      color: #F5F7FA;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #4FC3F7;
+      color: white;
+      transform: scale(1.05);
+    }
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 19;
+    }
+    .sidebar-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 80vw;
+      }
+      .sidebar a, .sidebar button {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+    }
+    .dashboard-container {
+      max-width: 100rem;
+      margin: 4rem auto;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      padding: 3.5rem;
+      animation: fadeIn 0.6s ease-out;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dashboard-container:hover {
+      transform: scale(1.02);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+    .dark .dashboard-container {
+      background: rgba(31, 41, 55, 0.9);
+      color: #F5F7FA;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .overview-card {
+      background: #F5F7FA;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
+      color: #333;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .dark .overview-card {
+      background: #374151;
+      color: #F5F7FA;
+    }
+    .overview-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .section {
+      margin-bottom: 3rem;
+    }
+    .section h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dark .section h2 {
+      color: #F5F7FA;
+    }
+    .report-card {
+      background: #F5F7FA;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .dark .report-card {
+      background: #374151;
+    }
+    .report-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .status-open {
+      background: #EF4444 !important;
+    }
+    .status-in-progress {
+      background: #FBBF24 !important;
+    }
+    .status-closed {
+      background: #10B981 !important;
+    }
+    .chart-container {
+      background: #F5F7FA;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      max-width: 100%;
+      height: 300px;
+    }
+    .dark .chart-container {
+      background: #374151;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0D47A1, #1565C0);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      font-size: 1.15rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-primary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-primary:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 2rem;
+      border-radius: 0.75rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.5s ease-out;
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: -2rem;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    [lang="en"] .tooltip:hover::after {
+      left: 0;
+      right: auto;
+    }
+    .icon-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .icon-container i {
+      font-size: 4rem;
+      transition: transform 0.3s ease;
+    }
+    .icon-container:hover i {
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <button id="toggle-sidebar" class="btn-primary fixed top-4 right-4 z-30 tooltip" data-tooltip="فتح/إغلاق القائمة" data-en-tooltip="Open/Close Menu" aria-expanded="false">
+    <i class="fas fa-bars fa-2x"></i>
+  </button>
+  <div class="sidebar">
+    <div class="p-4 text-center">
+      <div class="bg-blue-900 text-white rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+        PP
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 text-lg">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+    </div>
+    <div class="space-y-2">
+      <a href="dashboard.html" class="flex items-center"><i class="fas fa-tachometer-alt fa-2x mr-3"></i><span data-en="Dashboard">لوحة التحكم</span></a>
+      <a href="new-report.html" class="flex items-center"><i class="fas fa-plus fa-2x mr-3"></i><span data-en="New Report">بلاغ جديد</span></a>
+      <a href="reports-list.html" class="flex items-center"><i class="fas fa-list-alt fa-2x mr-3"></i><span data-en="Reports List">قائمة البلاغات</span></a>
+      <a href="report-details.html" class="flex items-center"><i class="fas fa-file-alt fa-2x mr-3"></i><span data-en="Report Details">تفاصيل البلاغ</span></a>
+      <a href="admin-dashboard.html" class="flex items-center"><i class="fas fa-user-shield fa-2x mr-3"></i><span data-en="Admin Dashboard">لوحة الإدارة</span></a>
+      <a href="archived-reports.html" class="flex items-center"><i class="fas fa-archive fa-2x mr-3"></i><span data-en="Archived Reports">البلاغات المؤرشفة</span></a>
+      <a href="user-profile.html" class="flex items-center"><i class="fas fa-user fa-2x mr-3"></i><span data-en="User Profile">الملف الشخصي</span></a>
+      <a href="reports-analytics.html" class="flex items-center"><i class="fas fa-chart-bar fa-2x mr-3"></i><span data-en="Reports Analytics">تحليلات البلاغات</span></a>
+      <a href="support-center.html" class="flex items-center"><i class="fas fa-headset fa-2x mr-3"></i><span data-en="Support Center">مركز الدعم</span></a>
+      <a href="#" id="logout-button" class="flex items-center"><i class="fas fa-sign-out-alt fa-2x mr-3"></i><span data-en="Logout">تسجيل الخروج</span></a>
+      <button id="theme-toggle" class="flex items-center w-full"><i class="fas fa-moon fa-2x mr-3"></i><span data-en="Dark Mode">الوضع الليلي</span></button>
+      <button id="lang-toggle" class="flex items-center w-full"><i class="fas fa-globe fa-2x mr-3"></i><span data-en="Switch to Arabic">تبديل إلى الإنجليزية</span></button>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="dashboard-container">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8" data-en="Admin Dashboard">لوحة الإدارة</h1>
+    <div class="section">
+      <h2 class="icon-container">
+        <i class="fas fa-user-shield text-blue-400 text-[4rem]"></i>
+        <span data-en="Overview">نظرة عامة</span>
+      </h2>
+      <div class="overview-grid">
+        <div class="overview-card">
+          <p class="font-bold" data-en="Total Reports">إجمالي البلاغات</p>
+          <p id="total-reports">0</p>
+        </div>
+        <div class="overview-card">
+          <p class="font-bold" data-en="Open Reports">البلاغات المفتوحة</p>
+          <p id="open-reports">0</p>
+        </div>
+        <div class="overview-card">
+          <p class="font-bold" data-en="Closed Reports">البلاغات المغلقة</p>
+          <p id="closed-reports">0</p>
+        </div>
+        <div class="overview-card">
+          <p class="font-bold" data-en="Average Closure Time">متوسط زمن الإغلاق</p>
+          <p id="avg-closure-time">0 يوم</p>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h2 class="icon-container">
+        <i class="fas fa-chart-line text-green-500 text-[4rem]"></i>
+        <span data-en="Statistics">إحصائيات</span>
+      </h2>
+      <div class="chart-container">
+        <canvas id="reports-by-type"></canvas>
+      </div>
+      <div class="chart-container mt-4">
+        <canvas id="reports-by-status"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <h2 class="icon-container">
+        <i class="fas fa-list-alt text-yellow-400 text-[4rem]"></i>
+        <span data-en="Recent Reports">البلاغات الأخيرة</span>
+      </h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="reports-cards"></div>
+    </div>
+  </div>
+  <footer class="mt-12 text-white text-center text-xl">
+    <span data-en="Prepared and Designed by Engineer Omar Ayman Odeh">إعداد وتصميم المهندس عمر أيمن عودة</span> | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300" data-en="Contact Support">تواصل مع الدعم</a>
+  </footer>
+
+  <script>
+    // إعداد وتصميم المهندس عمر أيمن عودة
+    // Check if user is logged in
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    } else {
+      const userName = localStorage.getItem('userName') || 'المستخدم';
+      document.getElementById('user-name').textContent = userName;
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.querySelector('span').textContent = document.body.classList.contains('dark') ? 'الوضع النهاري' : 'الوضع الليلي';
+      themeToggle.querySelector('span').setAttribute('data-en', document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode');
+      updateCharts();
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.querySelector('span').textContent = 'الوضع النهاري';
+      themeToggle.querySelector('span').setAttribute('data-en', 'Light Mode');
+    }
+
+    // Language Toggle
+    const langToggle = document.getElementById('lang-toggle');
+    langToggle.addEventListener('click', () => {
+      const currentLang = document.documentElement.lang;
+      document.documentElement.lang = currentLang === 'ar' ? 'en' : 'ar';
+      document.querySelectorAll('[data-en]').forEach(el => {
+        el.textContent = document.documentElement.lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-ar') || el.textContent;
+      });
+      document.querySelectorAll('[data-en-tooltip]').forEach(el => {
+        el.setAttribute('data-tooltip', document.documentElement.lang === 'en' ? el.getAttribute('data-en-tooltip') : el.getAttribute('data-ar-tooltip') || el.getAttribute('data-tooltip'));
+      });
+      langToggle.querySelector('span').textContent = document.documentElement.lang === 'en' ? 'تبديل إلى العربية' : 'تبديل إلى الإنجليزية';
+      langToggle.querySelector('span').setAttribute('data-en', document.documentElement.lang === 'en' ? 'Switch to Arabic' : 'Switch to English');
+      renderDashboard();
+      updateCharts();
+    });
+
+    // Sidebar Toggle
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    function toggleSidebarState() {
+      sidebar.classList.toggle('active');
+      sidebarOverlay.classList.toggle('active');
+      toggleSidebar.setAttribute('aria-expanded', sidebar.classList.contains('active'));
+    }
+
+    toggleSidebar.addEventListener('click', toggleSidebarState);
+    sidebarOverlay.addEventListener('click', toggleSidebarState);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+        toggleSidebarState();
+      }
+    });
+    toggleSidebar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSidebarState();
+      }
+    });
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Calculate days between two dates
+    function daysBetween(date1, date2) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      return Math.round(Math.abs((new Date(date1) - new Date(date2)) / oneDay));
+    }
+
+    // Fetch and Render Dashboard Data
+    function renderDashboard() {
+      let reports = JSON.parse(localStorage.getItem('reports') || '[]');
+      reports = reports.map(report => {
+        if (!report.location.includes('رام الله')) {
+          return { ...report, location: 'رام الله - شارع الإرسال' };
+        }
+        return report;
+      });
+      localStorage.setItem('reports', JSON.stringify(reports));
+
+      const totalReports = reports.length;
+      const openReports = reports.filter(r => r.status === 'مفتوح').length;
+      const closedReports = reports.filter(r => r.status === 'مغلق').length;
+      const closedReportsWithDates = reports.filter(r => r.status === 'مغلق' && r.closureDate);
+      const avgClosureTime = closedReportsWithDates.length > 0
+        ? Math.round(
+            closedReportsWithDates.reduce((sum, r) => sum + daysBetween(r.date, r.closureDate), 0) /
+            closedReportsWithDates.length
+          )
+        : 0;
+
+      document.getElementById('total-reports').textContent = totalReports;
+      document.getElementById('open-reports').textContent = openReports;
+      document.getElementById('closed-reports').textContent = closedReports;
+      document.getElementById('avg-closure-time').textContent = `${avgClosureTime} ${document.documentElement.lang === 'en' ? 'days' : 'يوم'}`;
+
+      const reportsCards = document.getElementById('reports-cards');
+      reportsCards.innerHTML = '';
+      const recentReports = reports.slice(0, 6);
+      const typeTranslations = {
+        'مرور': 'Traffic',
+        'جنائي': 'Criminal',
+        'مخالفات': 'Violations',
+        'إداري': 'Administrative',
+        'آخر': 'Other'
+      };
+      const statusTranslations = {
+        'مفتوح': 'Open',
+        'قيد المعالجة': 'In Progress',
+        'مغلق': 'Closed'
+      };
+
+      if (recentReports.length === 0) {
+        reportsCards.innerHTML = '<p class="text-gray-600 dark:text-gray-300 text-center col-span-full">لا توجد بلاغات متاحة.</p>';
+        return;
+      }
+
+      recentReports.forEach(report => {
+        const card = document.createElement('div');
+        card.className = 'report-card flex flex-col p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">تقرير رقم: ${report.id}</h3>
+            <span class="px-3 py-1 text-white rounded-full text-sm font-semibold ${
+              report.status === 'مفتوح' ? 'status-open' :
+              report.status === 'قيد المعالجة' ? 'status-in-progress' : 'status-closed'
+            }">${document.documentElement.lang === 'en' ? statusTranslations[report.status] || report.status : report.status}</span>
+          </div>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>العنوان:</strong> ${report.title}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>النوع:</strong> ${document.documentElement.lang === 'en' ? typeTranslations[report.type] || report.type : report.type}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>الموقع:</strong> ${report.location}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-4"><strong>التاريخ:</strong> ${report.date}</p>
+          <div class="flex gap-2">
+            <button class="btn-primary view-report" data-id="${report.id}" data-en="View"><i class="fas fa-eye mr-2"></i>عرض</button>
+            <button class="btn-primary edit-report" data-id="${report.id}" data-en="Edit"><i class="fas fa-edit mr-2"></i>تعديل</button>
+            <button class="btn-primary archive-report" data-id="${report.id}" data-en="Archive"><i class="fas fa-archive mr-2"></i>أرشفة</button>
+          </div>
+        `;
+        reportsCards.appendChild(card);
+      });
+
+      reportsCards.addEventListener('click', (e) => {
+        if (e.target.classList.contains('view-report') || e.target.closest('.view-report')) {
+          const id = e.target.dataset.id || e.target.closest('.view-report').dataset.id;
+          localStorage.setItem('selectedReportId', id);
+          window.location.href = 'report-details.html';
+        } else if (e.target.classList.contains('edit-report') || e.target.closest('.edit-report')) {
+          const id = e.target.dataset.id || e.target.closest('.edit-report').dataset.id;
+          localStorage.setItem('selectedReportId', id);
+          window.location.href = 'report-details.html';
+        } else if (e.target.classList.contains('archive-report') || e.target.closest('.archive-report')) {
+          const id = e.target.dataset.id || e.target.closest('.archive-report').dataset.id;
+          const report = reports.find(r => r.id == id);
+          if (report) {
+            report.status = 'مغلق';
+            report.closureDate = new Date().toISOString().split('T')[0];
+            localStorage.setItem('reports', JSON.stringify(reports));
+            showNotification(document.documentElement.lang === 'en' ? 'Report archived!' : 'تم أرشفة البلاغ!', 'success');
+            renderDashboard();
+            updateCharts();
+          }
+        }
+      });
+    }
+
+    let reportsByTypeChart, reportsByStatusChart;
+    function updateCharts() {
+      const reports = JSON.parse(localStorage.getItem('reports') || '[]');
+      const typeCounts = {
+        'مرور': 0,
+        'جنائي': 0,
+        'مخالفات': 0,
+        'إداري': 0,
+        'آخر': 0
+      };
+      const statusCounts = {
+        'مفتوح': 0,
+        'قيد المعالجة': 0,
+        'مغلق': 0
+      };
+      reports.forEach(report => {
+        typeCounts[report.type] = (typeCounts[report.type] || 0) + 1;
+        statusCounts[report.status] = (statusCounts[report.status] || 0) + 1;
+      });
+
+      const typeLabels = document.documentElement.lang === 'en' ?
+        ['Traffic', 'Criminal', 'Violations', 'Administrative', 'Other'] :
+        ['مرور', 'جنائي', 'مخالفات', 'إداري', 'آخر'];
+      const statusLabels = document.documentElement.lang === 'en' ?
+        ['Open', 'In Progress', 'Closed'] :
+        ['مفتوح', 'قيد المعالجة', 'مغلق'];
+
+      const isDark = document.body.classList.contains('dark');
+      const textColor = isDark ? '#F5F7FA' : '#333';
+      const gridColor = isDark ? '#4B5563' : '#E2E8F0';
+
+      if (reportsByTypeChart) reportsByTypeChart.destroy();
+      reportsByTypeChart = new Chart(document.getElementById('reports-by-type'), {
+        type: 'bar',
+        data: {
+          labels: typeLabels,
+          datasets: [{
+            label: document.documentElement.lang === 'en' ? 'Reports by Type' : 'البلاغات حسب النوع',
+            data: Object.values(typeCounts),
+            backgroundColor: ['#0D47A1', '#4FC3F7', '#FFC107', '#4CAF50', '#EF4444']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: textColor } } },
+          scales: {
+            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+            y: { ticks: { color: textColor }, grid: { color: gridColor } }
+          }
+        }
+      });
+
+      if (reportsByStatusChart) reportsByStatusChart.destroy();
+      reportsByStatusChart = new Chart(document.getElementById('reports-by-status'), {
+        type: 'pie',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            label: document.documentElement.lang === 'en' ? 'Reports by Status' : 'البلاغات حسب الحالة',
+            data: Object.values(statusCounts),
+            backgroundColor: ['#EF4444', '#FBBF24', '#10B981']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { color: textColor } } }
+        }
+      });
+    }
+
+    document.getElementById('logout-button').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('militaryNumber');
+      showNotification(document.documentElement.lang === 'en' ? 'Logged out successfully!' : 'تم تسجيل الخروج بنجاح!', 'success');
+      setTimeout(() => window.location.href = 'index.html', 1000);
+    });
+
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: Math.random() * 0.5 - 0.25,
+        vy: Math.random() * 0.5 - 0.25
+      });
+    }
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    renderDashboard();
+    updateCharts();
+  </script>
+</body>
+</html>
