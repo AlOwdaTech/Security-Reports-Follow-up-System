@@ -264,6 +264,16 @@
     <div class="widget">
       <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6">مواقع البلاغات</h2>
       <div class="map-container" id="reportMap"></div>
+      <div class="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">إضافة بلاغ جديد</h3>
+        <div class="space-y-4">
+          <input type="text" id="reportTitle" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="عنوان البلاغ" required>
+          <textarea id="reportDetails" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="تفاصيل البلاغ" rows="4" required></textarea>
+          <input type="hidden" id="reportLat" value="">
+          <input type="hidden" id="reportLng" value="">
+          <button onclick="submitReport()" class="btn-primary w-full">إرسال البلاغ</button>
+        </div>
+      </div>
     </div>
   </div>
   <footer class="mt-8 text-white text-center text-xl">
@@ -395,26 +405,112 @@
     initializeChart();
 
     // Interactive Map (Ramallah)
-    const map = L.map('reportMap').setView([31.904, 35.204], 13); // Ramallah center
+    const map = L.map('reportMap').setView([31.9044, 35.2034], 13); // Ramallah center
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
     }).addTo(map);
+
+    // Load markers from localStorage or use defaults
     const markers = JSON.parse(localStorage.getItem('mapMarkers')) || [
-      { lat: 31.903, lng: 35.203, title: 'حادث مروري في ساحة المنارة', type: 'traffic' },
-      { lat: 31.910, lng: 35.210, title: 'سرقة في شارع البيرة الرئيسي', type: 'criminal' },
-      { lat: 31.898, lng: 35.195, title: 'مخالفة مرورية في قلنديا', type: 'violations' },
-      { lat: 31.905, lng: 35.200, title: 'اضطراب عام في وسط المدينة', type: 'other' },
-      { lat: 31.900, lng: 35.207, title: 'شكوى إدارية في حي الطيرة', type: 'administrative' },
-      { lat: 31.906, lng: 35.205, title: 'حادث في شارع رام الله الرئيسي', type: 'traffic' }
+      { lat: 31.903, lng: 35.203, title: 'حادث مروري في ساحة المنارة', type: 'traffic', details: 'حادث بين سيارتين', timestamp: new Date().toLocaleString('ar-EG') },
+      { lat: 31.910, lng: 35.210, title: 'سرقة في شارع البيرة الرئيسي', type: 'criminal', details: 'سرقة متجر', timestamp: new Date().toLocaleString('ar-EG') },
+      { lat: 31.898, lng: 35.195, title: 'مخالفة مرورية في قلنديا', type: 'violations', details: 'تجاوز إشارة', timestamp: new Date().toLocaleString('ar-EG') },
+      { lat: 31.905, lng: 35.200, title: 'اضطراب عام في وسط المدينة', type: 'other', details: 'تجمع غير مرخص', timestamp: new Date().toLocaleString('ar-EG') },
+      { lat: 31.900, lng: 35.207, title: 'شكوى إدارية في حي الطيرة', type: 'administrative', details: 'مشكلة إدارية', timestamp: new Date().toLocaleString('ar-EG') },
+      { lat: 31.906, lng: 35.205, title: 'حادث في شارع رام الله الرئيسي', type: 'traffic', details: 'تصادم', timestamp: new Date().toLocaleString('ar-EG') }
     ];
+
+    // Display existing markers
     markers.forEach(m => {
       L.marker([m.lat, m.lng]).addTo(map)
-        .bindPopup(`<b>${m.title}</b>`);
+        .bindPopup(`<b>${m.title}</b><br>${m.details}<br><i>تاريخ: ${m.timestamp}</i>`);
     });
 
     // Save markers to localStorage
     function saveMarkers() {
       localStorage.setItem('mapMarkers', JSON.stringify(markers));
+    }
+
+    // Locate user
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        map.setView([userLat, userLng], 15);
+        L.marker([userLat, userLng], {
+          icon: L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+          })
+        }).addTo(map)
+          .bindPopup('موقعك الحالي').openPopup();
+      }, function(error) {
+        console.error('خطأ في تحديد الموقع:', error);
+        showNotification('تعذر تحديد الموقع. يرجى السماح بالوصول إلى الموقع.', 'error');
+      }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    } else {
+      showNotification('المتصفح لا يدعم تحديد الموقع.', 'error');
+    }
+
+    // Add marker on map click
+    map.on('click', function(e) {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      document.getElementById('reportLat').value = lat;
+      document.getElementById('reportLng').value = lng;
+      L.marker([lat, lng]).addTo(map)
+        .bindPopup(`إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)}`)
+        .openPopup();
+    });
+
+    // Submit report
+    function submitReport() {
+      const title = document.getElementById('reportTitle').value.trim();
+      const details = document.getElementById('reportDetails').value.trim();
+      const lat = document.getElementById('reportLat').value;
+      const lng = document.getElementById('reportLng').value;
+
+      if (!title || !details || !lat || !lng) {
+        showNotification('يرجى ملء جميع الحقول وتحديد موقع على الخريطة.', 'error');
+        return;
+      }
+
+      const report = {
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        title: title,
+        details: details,
+        type: 'other', // يمكن إضافة حقل لاختيار النوع لاحقًا
+        timestamp: new Date().toLocaleString('ar-EG')
+      };
+
+      markers.push(report);
+      L.marker([report.lat, report.lng]).addTo(map)
+        .bindPopup(`<b>${report.title}</b><br>${report.details}<br><i>تاريخ: ${report.timestamp}</i>`)
+        .openPopup();
+
+      saveMarkers();
+      stats.totalReports += 1;
+      stats.openReports += 1;
+      stats.openProgress = Math.round((stats.openReports / stats.totalReports) * 100);
+      stats.processingProgress = Math.round((stats.processingReports / stats.totalReports) * 100);
+      stats.closedProgress = Math.round((stats.closedReports / stats.totalReports) * 100);
+      updateStats();
+      saveStats();
+
+      // Reset form
+      document.getElementById('reportTitle').value = '';
+      document.getElementById('reportDetails').value = '';
+      document.getElementById('reportLat').value = '';
+      document.getElementById('reportLng').value = '';
+
+      showNotification('تم إرسال البلاغ بنجاح!', 'success');
     }
 
     // Logout
@@ -458,5 +554,6 @@
     }
     animateParticles();
   </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93750a21efc34527',t:'MTc0NTgyNzM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
