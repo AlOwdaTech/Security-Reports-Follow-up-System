@@ -162,7 +162,7 @@
     }
     .btn-primary:hover {
       transform: translateY(-3px);
-      box-shadow: 0 6 Palestinapx 20px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     }
     .chart-container {
       max-width: 24rem;
@@ -174,6 +174,48 @@
       height: 350px;
       border-radius: 1rem;
       overflow: hidden;
+    }
+    .live-stream-container {
+      max-width: 100%;
+      height: 400px;
+      border-radius: 1rem;
+      overflow: hidden;
+      background: #F5F7FA;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dark .live-stream-container {
+      background: #374151;
+    }
+    .live-stream-container iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .live-stream-container h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 1rem;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .dark .live-stream-container h2 {
+      color: #F5F7FA;
+    }
+    @media (max-width: 640px) {
+      .live-stream-container {
+        height: 300px;
+      }
+      .live-stream-container h2 {
+        font-size: 1.25rem;
+        padding: 0.75rem;
+      }
     }
     .notification {
       position: fixed;
@@ -312,7 +354,7 @@
       <div class="mt-4 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4" data-en="Add New Report">إضافة بلاغ جديد</h3>
         <div class="space-y-4">
-          <input type="text" id="reportTitle" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="عنوان البلاغ" required>
+          <input type="text" id="reportTitle" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="عنوان البلاغ" data-en-placeholder="Report Title" required>
           <select id="reportType" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" required>
             <option value="" disabled selected data-en="Select Report Type">اختر نوع البلاغ</option>
             <option value="مرور" data-en="Traffic">مرور</option>
@@ -321,12 +363,18 @@
             <option value="إداري" data-en="Administrative">إداري</option>
             <option value="آخر" data-en="Other">آخر</option>
           </select>
-          <textarea id="reportDetails" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="تفاصيل البلاغ" rows="4" required></textarea>
+          <textarea id="reportDetails" class="w-full p-2 border rounded-lg dark:bg-gray-700 dark:text-gray-200" placeholder="تفاصيل البلاغ" data-en-placeholder="Report Details" rows="4" required></textarea>
           <input type="hidden" id="reportLat" value="">
           <input type="hidden" id="reportLng" value="">
           <input type="hidden" id="reportLocation" value="">
           <button onclick="submitReport()" class="btn-primary w-full" data-en="Submit Report">إرسال البلاغ</button>
         </div>
+      </div>
+    </div>
+    <div class="widget">
+      <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-6" data-en="Ramallah City Live Stream">بث مباشر لمدينة رام الله</h2>
+      <div class="live-stream-container">
+        <iframe src="https://www.youtube.com/embed/Zm8Uy-yIZ1c?si=-qPbFkCWPVLWnniU&autoplay=1&mute=1&loop=1&playlist=Zm8Uy-yIZ1c" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
       </div>
     </div>
   </div>
@@ -368,6 +416,9 @@
       document.documentElement.lang = currentLang === 'ar' ? 'en' : 'ar';
       document.querySelectorAll('[data-en]').forEach(el => {
         el.textContent = document.documentElement.lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-ar') || el.textContent;
+      });
+      document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+        el.placeholder = document.documentElement.lang === 'en' ? el.getAttribute('data-en-placeholder') : el.getAttribute('data-ar-placeholder') || el.placeholder;
       });
       document.querySelectorAll('[data-en-tooltip]').forEach(el => {
         el.setAttribute('data-tooltip', document.documentElement.lang === 'en' ? el.getAttribute('data-en-tooltip') : el.getAttribute('data-ar-tooltip') || el.getAttribute('data-tooltip'));
@@ -533,17 +584,17 @@
             iconAnchor: [12, 41]
           })
         }).addTo(map)
-          .bindPopup('موقعك الحالي').openPopup();
+          .bindPopup(document.documentElement.lang === 'en' ? 'Your current location' : 'موقعك الحالي').openPopup();
       }, function(error) {
         console.error('خطأ في تحديد الموقع:', error);
-        showNotification('تعذر تحديد الموقع. يرجى السماح بالوصول إلى الموقع.', 'error');
+        showNotification(document.documentElement.lang === 'en' ? 'Unable to determine location. Please allow location access.' : 'تعذر تحديد الموقع. يرجى السماح بالوصول إلى الموقع.', 'error');
       }, {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0
       });
     } else {
-      showNotification('المتصفح لا يدعم تحديد الموقع.', 'error');
+      showNotification(document.documentElement.lang === 'en' ? 'Browser does not support geolocation.' : 'المتصفح لا يدعم تحديد الموقع.', 'error');
     }
 
     // Reverse Geocoding with Nominatim
@@ -558,11 +609,11 @@
         if (data && data.display_name) {
           return data.display_name;
         } else {
-          return `رام الله (إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+          return document.documentElement.lang === 'en' ? `Ramallah (Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)})` : `رام الله (إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
         }
       } catch (error) {
         console.error('خطأ في عكس الترميز الجغرافي:', error);
-        return `رام الله (إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        return document.documentElement.lang === 'en' ? `Ramallah (Coordinates: ${lat.toFixed(4)}, ${lng.toFixed(4)})` : `رام الله (إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)})`;
       }
     }
 
@@ -582,7 +633,7 @@
         map.removeLayer(currentMarker);
       }
       currentMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<b>الموقع:</b> ${address}<br><i>إحداثيات: ${lat.toFixed(4)}, ${lng.toFixed(4)}</i>`)
+        .bindPopup(`<b>${document.documentElement.lang === 'en' ? 'Location' : 'الموقع'}:</b> ${address}<br><i>${document.documentElement.lang === 'en' ? 'Coordinates' : 'إحداثيات'}: ${lat.toFixed(4)}, ${lng.toFixed(4)}</i>`)
         .openPopup();
     });
 
@@ -617,7 +668,7 @@
       localStorage.setItem('reports', JSON.stringify(reports));
 
       L.marker([report.lat, report.lng]).addTo(map)
-        .bindPopup(`<b>${report.title}</b><br>${report.description}<br><i>تاريخ: ${report.date}</i>`)
+        .bindPopup(`<b>${report.title}</b><br>${report.description}<br><i>${document.documentElement.lang === 'en' ? 'Date' : 'تاريخ'}: ${report.date}</i>`)
         .openPopup();
 
       updateStats();
@@ -683,6 +734,6 @@
     loadMarkers();
     updateStats();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9377dc553dc4452b',t:'MTc0NTg1Njk1MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9379297b3c6b53f6',t:'MTc0NTg3MDU5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

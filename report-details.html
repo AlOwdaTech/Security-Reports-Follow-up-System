@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
@@ -326,6 +327,15 @@
       border-color: #4FC3F7;
       box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.3);
     }
+    .form-group input:disabled {
+      background: #D1D5DB;
+      color: #6B7280;
+      cursor: not-allowed;
+    }
+    .dark .form-group input:disabled {
+      background: #6B7280;
+      color: #D1D5DB;
+    }
     .attachment-card, .history-card {
       background: #FFFFFF;
       padding: 1rem;
@@ -368,7 +378,7 @@
       <div class="bg-blue-900 text-white rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
         PP
       </div>
-      <p class="text-gray-600 dark:text-gray-300 text-lg">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+      <p class="text-gray-600 dark:text-gray-300 text-lg">مرحبًا، <span id="user-name"></span></p>
     </div>
     <div class="space-y-2">
       <a href="dashboard.html" class="flex items-center"><i class="fas fa-tachometer-alt fa-2x mr-3"></i><span data-en="Dashboard">لوحة التحكم</span></a>
@@ -441,7 +451,7 @@
         </div>
         <div class="form-group">
           <label for="edit-location" data-en="Location">الموقع</label>
-          <input type="text" id="edit-location" required />
+          <input type="text" id="edit-location" required placeholder="أدخل الموقع (مثل: رام الله، شارع الإرسال)" data-en-placeholder="Enter location (e.g., Ramallah, Al-Irsal Street)" />
         </div>
         <div class="form-group">
           <label for="edit-submission-date" data-en="Submission Date">تاريخ التقديم</label>
@@ -457,7 +467,9 @@
         </div>
         <div class="form-group">
           <label for="edit-assigned-officer" data-en="Assigned Officer">الموظف المستلم</label>
-          <input type="text" id="edit-assigned-officer" required />
+          <select id="edit-assigned-officer" required>
+            <option value="غير محدد" data-en="Not specified">غير محدد</option>
+          </select>
         </div>
         <div class="form-group">
           <label for="edit-priority" data-en="Priority">الأولوية</label>
@@ -552,6 +564,7 @@
       <div class="mt-2 text-gray-600 dark:text-gray-300" id="current-rating"></div>
     </div>
     <button class="btn-primary w-full mt-4" id="back-to-list" data-en="Back to Reports List">العودة إلى قائمة البلاغات</button>
+    <button class="btn-primary w-full mt-4" id="download-pdf" data-en="Download Report as PDF">تنزيل التقرير كـ PDF</button>
   </div>
   <footer class="mt-12 text-white text-center text-xl">
     <span data-en="Prepared and Designed by Engineer Omar Ayman Odeh">إعداد وتصميم المهندس عمر أيمن عودة</span> | 
@@ -653,6 +666,23 @@
       });
     }
 
+    // Populate Assigned Officer Dropdown
+    function populateAssignedOfficerDropdown(currentValue) {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const select = document.getElementById('edit-assigned-officer');
+      select.innerHTML = `<option value="غير محدد" data-en="Not specified">غير محدد</option>`;
+      users.forEach(user => {
+        if (user.militaryNumber) {
+          const option = document.createElement('option');
+          option.value = user.userName;
+          option.textContent = user.userName;
+          option.setAttribute('data-en', user.userName);
+          if (user.userName === currentValue) option.selected = true;
+          select.appendChild(option);
+        }
+      });
+    }
+
     // Report Details Rendering
     function renderReportDetails() {
       const reportId = localStorage.getItem('selectedReportId');
@@ -663,6 +693,11 @@
         showNotification(document.documentElement.lang === 'en' ? 'Report not found!' : 'البلاغ غير موجود!', 'error');
         setTimeout(() => window.location.href = 'reports-list.html', 1000);
         return;
+      }
+
+      if (!report.submittedBy) {
+        report.submittedBy = 'غير محدد';
+        localStorage.setItem('reports', JSON.stringify(reports));
       }
 
       const typeTranslations = {
@@ -689,10 +724,10 @@
       document.getElementById('phone-number').textContent = report.phoneNumber || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
       document.getElementById('email').textContent = report.email || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
       document.getElementById('submission-date').textContent = report.submissionDate ? new Date(report.submissionDate).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG') : report.date;
-      document.getElementById('report-location').textContent = report.location;
+      document.getElementById('report-location').textContent = report.location || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
       document.getElementById('report-type').textContent = document.documentElement.lang === 'en' ? typeTranslations[report.type] || report.type : report.type;
       document.getElementById('report-status').textContent = document.documentElement.lang === 'en' ? statusTranslations[report.status] || report.status : report.status;
-      document.getElementById('assigned-officer').textContent = report.assignedOfficer || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
+      document.getElementById('assigned-officer').textContent = report.submittedBy || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
       const priorityElement = document.getElementById('report-priority');
       priorityElement.textContent = document.documentElement.lang === 'en' ? priorityTranslations[report.priority] || report.priority : report.priority || (document.documentElement.lang === 'en' ? 'Not specified' : 'غير محدد');
       priorityElement.className = report.priority === 'عاجل' ? 'priority-urgent' : report.priority === 'متوسط' ? 'priority-medium' : 'priority-low';
@@ -700,23 +735,21 @@
       document.getElementById('report-description').textContent = report.description;
       document.getElementById('additional-notes').textContent = report.notes || (document.documentElement.lang === 'en' ? 'No additional notes' : 'لا توجد ملاحظات إضافية');
 
-      // Populate edit form
       document.getElementById('edit-complainant-name').value = report.complainantName || '';
       document.getElementById('edit-id-number').value = report.idNumber || '';
       document.getElementById('edit-phone-number').value = report.phoneNumber || '';
       document.getElementById('edit-email').value = report.email || '';
       document.getElementById('edit-title').value = report.title;
       document.getElementById('edit-type').value = report.type;
-      document.getElementById('edit-location').value = report.location;
+      document.getElementById('edit-location').value = report.location || '';
       document.getElementById('edit-submission-date').value = report.submissionDate ? new Date(report.submissionDate).toISOString().slice(0, 16) : report.date + 'T00:00';
       document.getElementById('edit-status').value = report.status;
-      document.getElementById('edit-assigned-officer').value = report.assignedOfficer || '';
+      populateAssignedOfficerDropdown(report.submittedBy || 'غير محدد');
       document.getElementById('edit-priority').value = report.priority || 'منخفض';
       document.getElementById('edit-expected-resolution').value = report.expectedResolution ? new Date(report.expectedResolution).toISOString().slice(0, 16) : '';
       document.getElementById('edit-description').value = report.description;
       document.getElementById('edit-notes').value = report.notes || '';
 
-      // Comments
       const commentsList = document.getElementById('comments-list');
       commentsList.innerHTML = '';
       (report.comments || []).forEach(comment => {
@@ -726,7 +759,6 @@
         commentsList.appendChild(commentDiv);
       });
 
-      // Attachments
       const attachmentsList = document.getElementById('attachments-list');
       attachmentsList.innerHTML = '';
       (report.attachments || []).forEach(attachment => {
@@ -736,7 +768,6 @@
         attachmentsList.appendChild(attachmentDiv);
       });
 
-      // Update History
       const historyList = document.getElementById('history-list');
       historyList.innerHTML = '';
       (report.history || []).forEach(entry => {
@@ -746,7 +777,6 @@
         historyList.appendChild(historyDiv);
       });
 
-      // Rating
       const ratingSection = document.getElementById('rating-section');
       ratingSection.style.display = report.status === 'مغلق' ? 'block' : 'none';
       document.getElementById('current-rating').textContent = report.rating ? `${document.documentElement.lang === 'en' ? 'Current Rating' : 'التقييم الحالي'}: ${report.rating} ${document.documentElement.lang === 'en' ? 'star(s)' : 'نجمة/نجوم'}` : '';
@@ -755,7 +785,6 @@
       }
     }
 
-    // Edit Report
     document.getElementById('edit-report').addEventListener('click', () => {
       document.getElementById('edit-report-form').classList.toggle('active');
     });
@@ -775,7 +804,6 @@
         return;
       }
 
-      const oldStatus = report.status;
       const newComplainantName = document.getElementById('edit-complainant-name').value.trim();
       const newIdNumber = document.getElementById('edit-id-number').value.trim();
       const newPhoneNumber = document.getElementById('edit-phone-number').value.trim();
@@ -785,18 +813,17 @@
       const newLocation = document.getElementById('edit-location').value.trim();
       const newSubmissionDate = document.getElementById('edit-submission-date').value;
       const newStatus = document.getElementById('edit-status').value;
-      const newAssignedOfficer = document.getElementById('edit-assigned-officer').value.trim();
+      const newAssignedOfficer = document.getElementById('edit-assigned-officer').value;
       const newPriority = document.getElementById('edit-priority').value;
       const newExpectedResolution = document.getElementById('edit-expected-resolution').value;
       const newDescription = document.getElementById('edit-description').value.trim();
       const newNotes = document.getElementById('edit-notes').value.trim();
 
-      if (!newComplainantName || !newIdNumber || !newPhoneNumber || !newEmail || !newTitle || !newType || !newLocation || !newSubmissionDate || !newStatus || !newAssignedOfficer || !newPriority || !newDescription) {
+      if (!newComplainantName || !newIdNumber || !newPhoneNumber || !newEmail || !newTitle || !newType || !newLocation || !newSubmissionDate || !newStatus || !newPriority || !newDescription) {
         showNotification(document.documentElement.lang === 'en' ? 'Please fill all required fields!' : 'يرجى ملء جميع الحقول المطلوبة!', 'error');
         return;
       }
 
-      // Validate phone number and email
       const phoneRegex = /^05[0-9]{8}$/;
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!phoneRegex.test(newPhoneNumber)) {
@@ -808,7 +835,13 @@
         return;
       }
 
-      // Update report
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const validOfficers = users.filter(user => user.militaryNumber).map(user => user.userName).concat(['غير محدد']);
+      if (!validOfficers.includes(newAssignedOfficer)) {
+        showNotification(document.documentElement.lang === 'en' ? 'Invalid assigned officer!' : 'الموظف المستلم غير صالح!', 'error');
+        return;
+      }
+
       const changes = [];
       if (report.complainantName !== newComplainantName) changes.push(`${document.documentElement.lang === 'en' ? 'Changed complainant name to' : 'تغيير اسم المشتكي إلى'}: ${newComplainantName}`);
       if (report.idNumber !== newIdNumber) changes.push(`${document.documentElement.lang === 'en' ? 'Changed ID number to' : 'تغيير رقم الهوية إلى'}: ${newIdNumber}`);
@@ -819,7 +852,7 @@
       if (report.location !== newLocation) changes.push(`${document.documentElement.lang === 'en' ? 'Changed location to' : 'تغيير الموقع إلى'}: ${newLocation}`);
       if (report.submissionDate !== newSubmissionDate) changes.push(`${document.documentElement.lang === 'en' ? 'Changed submission date to' : 'تغيير تاريخ التقديم إلى'}: ${new Date(newSubmissionDate).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG')}`);
       if (report.status !== newStatus) changes.push(`${document.documentElement.lang === 'en' ? 'Changed status to' : 'تغيير الحالة إلى'}: ${newStatus}`);
-      if (report.assignedOfficer !== newAssignedOfficer) changes.push(`${document.documentElement.lang === 'en' ? 'Changed assigned officer to' : 'تغيير الموظف المستلم إلى'}: ${newAssignedOfficer}`);
+      if (report.submittedBy !== newAssignedOfficer) changes.push(`${document.documentElement.lang === 'en' ? 'Changed assigned officer to' : 'تغيير الموظف المستلم إلى'}: ${newAssignedOfficer}`);
       if (report.priority !== newPriority) changes.push(`${document.documentElement.lang === 'en' ? 'Changed priority to' : 'تغيير الأولوية إلى'}: ${newPriority}`);
       if (report.expectedResolution !== newExpectedResolution) changes.push(`${document.documentElement.lang === 'en' ? 'Changed expected resolution time to' : 'تغيير الوقت المتوقع للمعالجة إلى'}: ${new Date(newExpectedResolution).toLocaleString(document.documentElement.lang === 'en' ? 'en-US' : 'ar-EG')}`);
       if (report.description !== newDescription) changes.push(`${document.documentElement.lang === 'en' ? 'Changed description' : 'تغيير الوصف'}`);
@@ -834,7 +867,7 @@
       report.location = newLocation;
       report.submissionDate = newSubmissionDate;
       report.status = newStatus;
-      report.assignedOfficer = newAssignedOfficer;
+      report.submittedBy = newAssignedOfficer;
       report.priority = newPriority;
       report.expectedResolution = newExpectedResolution;
       report.description = newDescription;
@@ -853,7 +886,6 @@
       showNotification(document.documentElement.lang === 'en' ? 'Report updated successfully!' : 'تم تحديث البلاغ بنجاح!', 'success');
     });
 
-    // Add Comment
     document.getElementById('add-comment').addEventListener('click', () => {
       const commentInput = document.getElementById('new-comment');
       const comment = commentInput.value.trim();
@@ -883,7 +915,6 @@
       }
     });
 
-    // Submit Rating
     document.getElementById('submit-rating').addEventListener('click', () => {
       const rating = document.getElementById('service-rating').value;
       if (!rating) {
@@ -907,19 +938,15 @@
       }
     });
 
-    // Back to Reports List
     document.getElementById('back-to-list').addEventListener('click', () => {
       window.location.href = 'reports-list.html';
     });
 
     // Logout
-    document.getElementById('logout-button').addEventListener('click', (e) => {
-      e.preventDefault();
+    document.getElementById('logout-button').addEventListener('click', () => {
       localStorage.removeItem('isLoggedIn');
       localStorage.removeItem('userName');
-      localStorage.removeItem('militaryNumber');
-      showNotification(document.documentElement.lang === 'en' ? 'Logged out successfully!' : 'تم تسجيل الخروج بنجاح!', 'success');
-      setTimeout(() => window.location.href = 'index.html', 1000);
+      window.location.href = 'index.html';
     });
 
     // Particle Background
@@ -953,9 +980,178 @@
     }
     animateParticles();
 
+    // PDF Generation
+    document.getElementById('download-pdf').addEventListener('click', async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      doc.setFont('Arial');
+      doc.setFontSize(16);
+      doc.setLanguage('en');
+
+      const reportId = localStorage.getItem('selectedReportId');
+      const reports = JSON.parse(localStorage.getItem('reports') || '[]');
+      const report = reports.find(r => r.id == reportId);
+
+      if (!report) {
+        showNotification('Report not found!', 'error');
+        return;
+      }
+
+      const typeTranslations = {
+        'مرور': 'Traffic',
+        'جنائي': 'Criminal',
+        'مخالفات': 'Violations',
+        'إداري': 'Administrative',
+        'آخر': 'Other'
+      };
+      const statusTranslations = {
+        'مفتوح': 'Open',
+        'قيد المراجعة': 'Under Review',
+        'مغلق': 'Closed'
+      };
+      const priorityTranslations = {
+        'عاجل': 'Urgent 🚨',
+        'متوسط': 'Medium ⚡',
+        'منخفض': 'Low 🕑'
+      };
+
+      let yPosition = 20;
+
+      // Title
+      doc.text('Report Details', 105, yPosition, { align: 'center' });
+      yPosition += 10;
+
+      // System Name
+      doc.setFontSize(12);
+      doc.text('Security Reports System', 105, yPosition, { align: 'center' });
+      yPosition += 7;
+
+      // Printed By
+      const userName = localStorage.getItem('userName') || 'Unknown User';
+      const militaryNumber = localStorage.getItem('militaryNumber') || 'Not specified';
+      doc.text(`Printed By: ${userName} (Military Number: ${militaryNumber})`, 105, yPosition, { align: 'center' });
+      yPosition += 7;
+
+      // Print Date
+      const printDate = new Date().toLocaleString('en-US');
+      doc.text(`Print Date: ${printDate}`, 105, yPosition, { align: 'center' });
+      yPosition += 10;
+
+      // Report Information
+      doc.setFontSize(12);
+      const infoLines = [
+        `Report ID: ${report.id}`,
+        `Complainant Name: ${report.complainantName || 'Not specified'}`,
+        `ID Number: ${report.idNumber || 'Not specified'}`,
+        `Phone Number: ${report.phoneNumber || 'Not specified'}`,
+        `Email: ${report.email || 'Not specified'}`,
+        `Submission Date: ${report.submissionDate ? new Date(report.submissionDate).toLocaleString('en-US') : report.date || 'Not specified'}`,
+        `Location: ${report.location || 'Not specified'}`,
+        `Type: ${typeTranslations[report.type] || report.type || 'Not specified'}`,
+        `Status: ${statusTranslations[report.status] || report.status || 'Not specified'}`,
+        `Assigned Officer: ${report.submittedBy || 'Not specified'}`,
+        `Priority: ${priorityTranslations[report.priority] || report.priority || 'Not specified'}`,
+        `Expected Resolution Time: ${report.expectedResolution ? new Date(report.expectedResolution).toLocaleString('en-US') : 'Not specified'}`,
+        `Description: ${report.description || 'Not specified'}`,
+        `Additional Notes: ${report.notes || 'No additional notes'}`
+      ];
+
+      infoLines.forEach(line => {
+        const splitText = doc.splitTextToSize(line, 180);
+        splitText.forEach(textLine => {
+          doc.text(textLine, 15, yPosition, { align: 'left' });
+          yPosition += 7;
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        });
+      });
+
+      // Comments
+      yPosition += 10;
+      doc.text('Comments:', 15, yPosition, { align: 'left' });
+      yPosition += 7;
+      if (report.comments && report.comments.length > 0) {
+        report.comments.forEach(comment => {
+          const commentText = `${comment.text} (${new Date(comment.date).toLocaleString('en-US')})`;
+          const splitComment = doc.splitTextToSize(commentText, 180);
+          splitComment.forEach(line => {
+            doc.text(line, 15, yPosition, { align: 'left' });
+            yPosition += 7;
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+          });
+        });
+      } else {
+        doc.text('No comments', 15, yPosition, { align: 'left' });
+        yPosition += 7;
+      }
+
+      // Attachments
+      yPosition += 10;
+      doc.text('Attachments:', 15, yPosition, { align: 'left' });
+      yPosition += 7;
+      if (report.attachments && report.attachments.length > 0) {
+        report.attachments.forEach(attachment => {
+          const attachmentText = `${attachment.name} (${(attachment.size / 1024).toFixed(2)} KB)`;
+          const splitAttachment = doc.splitTextToSize(attachmentText, 180);
+          splitAttachment.forEach(line => {
+            doc.text(line, 15, yPosition, { align: 'left' });
+            yPosition += 7;
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+          });
+        });
+      } else {
+        doc.text('No attachments', 15, yPosition, { align: 'left' });
+        yPosition += 7;
+      }
+
+      // History
+      yPosition += 10;
+      doc.text('Update History:', 15, yPosition, { align: 'left' });
+      yPosition += 7;
+      if (report.history && report.history.length > 0) {
+        report.history.forEach(entry => {
+          const historyText = `${entry.action} (${new Date(entry.date).toLocaleString('en-US')})`;
+          const splitHistory = doc.splitTextToSize(historyText, 180);
+          splitHistory.forEach(line => {
+            doc.text(line, 15, yPosition, { align: 'left' });
+            yPosition += 7;
+            if (yPosition > 270) {
+              doc.addPage();
+              yPosition = 20;
+            }
+          });
+        });
+      } else {
+        doc.text('No updates', 15, yPosition, { align: 'left' });
+        yPosition += 7;
+      }
+
+      // Rating
+      yPosition += 10;
+      doc.text('Service Rating:', 15, yPosition, { align: 'left' });
+      yPosition += 7;
+      doc.text(report.rating ? `${report.rating} star(s)` : 'Not rated yet', 15, yPosition, { align: 'left' });
+
+      // Save PDF
+      doc.save(`Report_${report.id}.pdf`);
+      showNotification('Report downloaded successfully!', 'success');
+    });
+
     // Initial Render
     renderReportDetails();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9377ee1ecfb3be15',t:'MTc0NTg1NzY3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

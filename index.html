@@ -154,6 +154,31 @@
       z-index: 10;
       white-space: nowrap;
     }
+    .citizen-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #4FC3F7;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      text-decoration: none;
+      margin-top: 0.5rem;
+    }
+    .dark .citizen-button {
+      background: #075985;
+    }
+    .citizen-button:hover {
+      background: #0D47A1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .citizen-button i {
+      margin-left: 0.5rem;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -191,10 +216,18 @@
         <i class="fas fa-sign-in-alt mr-2"></i>تسجيل الدخول
       </button>
     </div>
-    <div class="mt-5 text-center">
-      <a href="#" id="forgot-password" class="text-blue-400 hover:text-blue-500 hover:underline text-sm">
-        نسيت كلمة المرور؟
-      </a>
+    <div class="mt-5 text-center space-y-2">
+      <div>
+        <a href="#" id="forgot-password" class="text-blue-400 hover:text-blue-500 hover:underline text-sm">
+          نسيت كلمة المرور؟
+        </a>
+      </div>
+      <div>
+        <a href="citizen-report.html" class="citizen-button">
+          بلاغ مواطن
+          <i class="fas fa-sign-in-alt"></i>
+        </a>
+      </div>
     </div>
   </div>
   <footer class="mt-8 text-white text-center text-sm">
@@ -204,12 +237,19 @@
 
   <script>
     // إعداد وتصميم المهندس عمر أيمن عودة
-    // User data for login
-    const exampleUser = {
-      militaryNumber: '420165383',
-      password: 'pass123',
-      name: 'عمر أيمن عودة'
-    };
+    // Users data for login
+    const users = [
+      {
+        militaryNumber: '420165383',
+        password: 'pass123',
+        name: 'عمر أيمن عودة'
+      },
+      {
+        militaryNumber: '420165384',
+        password: 'pass123',
+        name: 'محمد احمد خالد'
+      }
+    ];
 
     // Theme Toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -268,10 +308,11 @@
         return;
       }
 
-      if (militaryNumber === exampleUser.militaryNumber && password === exampleUser.password) {
+      const user = users.find(u => u.militaryNumber === militaryNumber && u.password === password);
+      if (user) {
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userName', exampleUser.name);
-        localStorage.setItem('militaryNumber', exampleUser.militaryNumber);
+        localStorage.setItem('userName', user.name);
+        localStorage.setItem('militaryNumber', user.militaryNumber);
         showNotification('تم تسجيل الدخول بنجاح!', 'success');
         setTimeout(() => window.location.href = 'dashboard.html', 1000);
       } else {
@@ -279,6 +320,15 @@
         errorMessage.textContent = 'الرقم العسكري أو كلمة المرور غير صحيحة. تواصل مع الدعم إذا استمر الخلل.';
         errorMessage.style.display = 'block';
       }
+    });
+
+    // Trigger login on Enter key press
+    [militaryNumberInput, passwordInput].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          loginButton.click();
+        }
+      });
     });
 
     forgotPasswordLink.addEventListener('click', (e) => {
@@ -326,5 +376,7 @@
       }
     });
   </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'937956c3495dadb0',t:'MTc0NTg3MjQ1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'937e14d289cfadb9',t:'MTc0NTkyMjE3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
