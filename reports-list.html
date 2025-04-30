@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>قائمة البلاغات - نظام متابعة البلاغات الأمنية</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1E3A8A 0%, #075985 100%);
+    }
+    [lang="en"] {
+      direction: ltr;
+      font-family: 'Arial', sans-serif;
+    }
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    .sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      width: 16rem;
+      max-width: 80vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: -100%;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      transition: right 0.3s ease, transform 0.3s ease;
+      z-index: 20;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      right: 0;
+      transform: translateX(0);
+    }
+    .dark .sidebar {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F5F7FA;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      color: #333;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      transition: all 0.3s ease;
+    }
+    .dark .sidebar a, .dark .sidebar button {
+      color: #F5F7FA;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #4FC3F7;
+      color: white;
+      transform: scale(1.05);
+    }
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 19;
+    }
+    .sidebar-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 80vw;
+      }
+      .sidebar a, .sidebar button {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+    }
+    .table-container {
+      max-width: 100rem;
+      margin: 4rem auto;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      padding: 3.5rem;
+      animation: fadeIn 0.6s ease-out;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .table-container:hover {
+      transform: scale(1.02);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+    .dark .table-container {
+      background: rgba(31, 41, 55, 0.9);
+      color: #F5F7FA;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+    .search-bar input {
+      flex: 1;
+      padding: 0.75rem;
+      font-size: 1.5rem;
+      border: 1px solid #E2E8F0;
+      border-radius: 0.75rem;
+      background: #E2E8F0;
+      color: #333;
+      transition: border-color 0.3s ease;
+    }
+    .dark .search-bar input {
+      border-color: #4B5563;
+      background: #4B5563;
+      color: #F5F7FA;
+    }
+    .search-bar input:focus {
+      outline: none;
+      border-color: #4FC3F7;
+      box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.3);
+    }
+    .report-card {
+      background: #F5F7FA;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .dark .report-card {
+      background: #374151;
+    }
+    .report-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+    .status-open {
+      background: #EF4444 !important; /* أحمر */
+    }
+    .status-in-progress {
+      background: #FBBF24 !important; /* أصفر */
+    }
+    .status-closed {
+      background: #10B981 !important; /* أخضر */
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0D47A1, #1565C0);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      font-size: 1.15rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-primary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-primary:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 3rem;
+    }
+    .pagination button {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      background: #E2E8F0;
+      color: #333;
+      transition: all 0.3s ease;
+    }
+    .dark .pagination button {
+      background: #4B5563;
+      color: #F5F7FA;
+    }
+    .pagination button.active {
+      background: #4FC3F7;
+      color: white;
+    }
+    .pagination button:hover {
+      background: #4FC3F7;
+      color: white;
+      transform: scale(1.05);
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 2rem;
+      border-radius: 0.75rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.5s ease-out;
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: -2rem;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    [lang="en"] .tooltip:hover::after {
+      left: 0;
+      right: auto;
+    }
+    .icon-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .icon-container i {
+      font-size: 4rem;
+      transition: transform 0.3s ease;
+    }
+    .icon-container:hover i {
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <button id="toggle-sidebar" class="btn-primary fixed top-4 right-4 z-30 tooltip" data-tooltip="فتح/إغلاق القائمة" data-en-tooltip="Open/Close Menu" aria-expanded="false">
+    <i class="fas fa-bars fa-2x"></i>
+  </button>
+  <div class="sidebar">
+    <div class="p-4 text-center">
+      <div class="bg-blue-900 text-white rounded-full h-12 w-12 flex items-center justify-center text-xl font-bold mx-auto mb-4">
+        PP
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 text-lg">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+    </div>
+    <div class="space-y-2">
+      <a href="dashboard.html" class="flex items-center"><i class="fas fa-tachometer-alt fa-2x mr-3"></i><span data-en="Dashboard">لوحة التحكم</span></a>
+      <a href="new-report.html" class="flex items-center"><i class="fas fa-plus fa-2x mr-3"></i><span data-en="New Report">بلاغ جديد</span></a>
+      <a href="reports-list.html" class="flex items-center"><i class="fas fa-list-alt fa-2x mr-3"></i><span data-en="Reports List">قائمة البلاغات</span></a>
+      <a href="tasks-center.html" class="flex items-center"><i class="fas fa-tasks fa-2x mr-3"></i><span data-en="Tasks Management Center">مركز إدارة المهام</span></a>
+      <a href="report-details.html" class="flex items-center"><i class="fas fa-file-alt fa-2x mr-3"></i><span data-en="Report Details">تفاصيل البلاغ</span></a>
+      <a href="admin-dashboard.html" class="flex items-center"><i class="fas fa-user-shield fa-2x mr-3"></i><span data-en="Admin Dashboard">لوحة الإدارة</span></a>
+      <a href="archived-reports.html" class="flex items-center"><i class="fas fa-archive fa-2x mr-3"></i><span data-en="Archived Reports">البلاغات المؤرشفة</span></a>
+      <a href="user-profile.html" class="flex items-center"><i class="fas fa-user fa-2x mr-3"></i><span data-en="User Profile">الملف الشخصي</span></a>
+      <a href="reports-analytics.html" class="flex items-center"><i class="fas fa-chart-bar fa-2x mr-3"></i><span data-en="Reports Analytics">تحليلات البلاغات</span></a>
+      <a href="support-center.html" class="flex items-center"><i class="fas fa-headset fa-2x mr-3"></i><span data-en="Support Center">مركز الدعم</span></a>
+      <a href="predictive-analytics.html" class="flex items-center"><i class="fas fa-brain fa-2x mr-3"></i><span data-en="Predictive Incident Analytics">تحليلات توقع الحوادث</span></a>
+      <a href="#" id="logout-button" class="flex items-center"><i class="fas fa-sign-out-alt fa-2x mr-3"></i><span data-en="Logout">تسجيل الخروج</span></a>
+      <button id="theme-toggle" class="flex items-center w-full"><i class="fas fa-moon fa-2x mr-3"></i><span data-en="Dark Mode">الوضع الليلي</span></button>
+      <button id="lang-toggle" class="flex items-center w-full"><i class="fas fa-globe fa-2x mr-3"></i><span data-en="Switch to Arabic">تبديل إلى الإنجليزية</span></button>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="table-container">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8" data-en="Reports List">قائمة البلاغات</h1>
+    <div class="search-bar">
+      <i class="fas fa-search text-blue-400 text-[4rem]"></i>
+      <input type="text" id="search-input" placeholder="ابحث حسب العنوان أو النوع في رام الله..." data-en-placeholder="Search by title or type in Ramallah..." />
+      <button id="export-csv" class="btn-primary tooltip" data-tooltip="تصدير كملف CSV" data-en-tooltip="Export as CSV">
+        <i class="fas fa-download text-green-500 text-[4rem]"></i>
+      </button>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="reports-cards"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+  <footer class="mt-12 text-white text-center text-xl">
+    <span data-en="Prepared and Designed by Engineer Omar Ayman Odeh">إعداد وتصميم المهندس عمر أيمن عودة</span> | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300" data-en="Contact Support">تواصل مع الدعم</a>
+  </footer>
+
+  <script>
+    // إعداد وتصميم المهندس عمر أيمن عودة
+    // Check if user is logged in
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    } else {
+      const userName = localStorage.getItem('userName') || 'المستخدم';
+      document.getElementById('user-name').textContent = userName;
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.querySelector('span').textContent = document.body.classList.contains('dark') ? 'الوضع النهاري' : 'الوضع الليلي';
+      themeToggle.querySelector('span').setAttribute('data-en', document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode');
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.querySelector('span').textContent = 'الوضع النهاري';
+      themeToggle.querySelector('span').setAttribute('data-en', 'Light Mode');
+    }
+
+    // Language Toggle
+    const langToggle = document.getElementById('lang-toggle');
+    langToggle.addEventListener('click', () => {
+      const currentLang = document.documentElement.lang;
+      document.documentElement.lang = currentLang === 'ar' ? 'en' : 'ar';
+      document.querySelectorAll('[data-en]').forEach(el => {
+        el.textContent = document.documentElement.lang === 'en' ? el.getAttribute('data-en') : el.getAttribute('data-ar') || el.textContent;
+      });
+      document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+        el.placeholder = document.documentElement.lang === 'en' ? el.getAttribute('data-en-placeholder') : el.getAttribute('data-ar-placeholder') || el.placeholder;
+      });
+      document.querySelectorAll('[data-en-tooltip]').forEach(el => {
+        el.setAttribute('data-tooltip', document.documentElement.lang === 'en' ? el.getAttribute('data-en-tooltip') : el.getAttribute('data-ar-tooltip') || el.getAttribute('data-tooltip'));
+      });
+      langToggle.querySelector('span').textContent = document.documentElement.lang === 'en' ? 'تبديل إلى العربية' : 'تبديل إلى الإنجليزية';
+      langToggle.querySelector('span').setAttribute('data-en', document.documentElement.lang === 'en' ? 'Switch to Arabic' : 'Switch to English');
+      renderCards(currentPage);
+    });
+
+    // Sidebar Toggle
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    function toggleSidebarState() {
+      sidebar.classList.toggle('active');
+      sidebarOverlay.classList.toggle('active');
+      toggleSidebar.setAttribute('aria-expanded', sidebar.classList.contains('active'));
+    }
+
+    toggleSidebar.addEventListener('click', toggleSidebarState);
+    sidebarOverlay.addEventListener('click', toggleSidebarState);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+        toggleSidebarState();
+      }
+    });
+    toggleSidebar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSidebarState();
+      }
+    });
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Reports Data
+    const initialReports = [
+      { id: 1, title: 'حادث مروري في شارع الإرسال', type: 'مرور', location: 'رام الله - شارع الإرسال', date: '2025-04-01', status: 'مفتوح', description: 'تصادم بين سيارتين في شارع الإرسال بسبب السرعة الزائدة.', attachments: [] },
+      { id: 2, title: 'سرقة متجر في شارع ركب', type: 'جنائي', location: 'رام الله - شارع ركب', date: '2025-04-02', status: 'قيد المعالجة', description: 'سرقة متجر في شارع ركب الرئيسي.', attachments: [] },
+      { id: 3, title: 'مخالفة توقف في شارع الإرسال', type: 'مخالفات', location: 'رام الله - شارع الإرسال', date: '2025-04-03', status: 'مغلق', description: 'توقف غير قانوني في شارع الإرسال.', attachments: [] },
+      { id: 4, title: 'اضطراب في شارع ركب', type: 'آخر', location: 'رام الله - شارع ركب', date: '2025-04-04', status: 'مفتوح', description: 'اضطراب بسبب تجمع في شارع ركب.', attachments: [] },
+      { id: 5, title: 'شكوى إدارية في شارع الإرسال', type: 'إداري', location: 'رام الله - شارع الإرسال', date: '2025-04-05', status: 'قيد المعالجة', description: 'شكوى ضد موظف في شارع الإرسال.', attachments: [] },
+      { id: 6, title: 'تصادم سيارات في شارع ركب', type: 'مرور', location: 'رام الله - شارع ركب', date: '2025-04-06', status: 'مغلق', description: 'حادث تصادم في شارع ركب.', attachments: [] },
+      { id: 7, title: 'اعتداء في شارع الإرسال', type: 'جنائي', location: 'رام الله - شارع الإرسال', date: '2025-04-07', status: 'مفتوح', description: 'اعتداء جسدي في شارع الإرسال.', attachments: [] },
+      { id: 8, title: 'مخالفة بناء في شارع ركب', type: 'مخالفات', location: 'رام الله - شارع ركب', date: '2025-04-08', status: 'قيد المعالجة', description: 'بناء غير مرخص في شارع ركب.', attachments: [] },
+      { id: 9, title: 'حريق صغير في شارع الإرسال', type: 'آخر', location: 'رام الله - شارع الإرسال', date: '2025-04-09', status: 'مغلق', description: 'حريق صغير في شارع الإرسال.', attachments: [] },
+      { id: 10, title: 'ضوضاء ليلية في شارع ركب', type: 'إداري', location: 'رام الله - شارع ركب', date: '2025-04-10', status: 'مفتوح', description: 'شكوى ضوضاء في شارع ركب.', attachments: [] },
+      { id: 11, title: 'حادث مروري آخر في شارع الإرسال', type: 'مرور', location: 'رام الله - شارع الإرسال', date: '2025-04-11', status: 'قيد المعالجة', description: 'حادث بسبب إشارة معطلة في شارع الإرسال.', attachments: [] },
+      { id: 12, title: 'سرقة دراجة في شارع ركب', type: 'جنائي', location: 'رام الله - شارع ركب', date: '2025-04-12', status: 'مغلق', description: 'سرقة دراجة نارية في شارع ركب.', attachments: [] },
+      { id: 13, title: 'تجاوز سرعة في شارع الإرسال', type: 'مخالفات', location: 'رام الله - شارع الإرسال', date: '2025-04-13', status: 'مفتوح', description: 'مخالفة سرعة في شارع الإرسال.', attachments: [] },
+      { id: 14, title: 'تسرب غاز في شارع الإرسال', type: 'آخر', location: 'رام الله - شارع الإرسال', date: '2025-04-28', status: 'مفتوح', description: 'تم الإبلاغ عن تسرب غاز في مبنى سكني في شارع الإرسال، تم إخلاء السكان وجاري التعامل مع الحادث.', attachments: [{ name: 'gas_leak_image.jpg', size: 5242880 }] }
+    ];
+    let reports = JSON.parse(localStorage.getItem('reports') || '[]');
+    if (reports.length === 0) {
+      localStorage.setItem('reports', JSON.stringify(initialReports));
+      reports = initialReports;
+    }
+
+    // Ensure all report locations are in Ramallah
+    reports = reports.map(report => {
+      if (!report.location.includes('رام الله')) {
+        return { ...report, location: 'رام الله - شارع ركب' };
+      }
+      return report;
+    });
+    localStorage.setItem('reports', JSON.stringify(reports));
+
+    // Card Rendering
+    const reportsCards = document.getElementById('reports-cards');
+    const pagination = document.getElementById('pagination');
+    const itemsPerPage = 10;
+    let currentPage = 1;
+
+    function renderCards(page) {
+      reportsCards.innerHTML = '';
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const filteredReports = reports.filter(report =>
+        report.title.toLowerCase().includes(searchTerm) ||
+        report.type.toLowerCase().includes(searchTerm) ||
+        report.location.toLowerCase().includes(searchTerm)
+      );
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedReports = filteredReports.slice(start, end);
+
+      const typeTranslations = {
+        'مرور': 'Traffic',
+        'جنائي': 'Criminal',
+        'مخالفات': 'Violations',
+        'إداري': 'Administrative',
+        'آخر': 'Other'
+      };
+      const statusTranslations = {
+        'مفتوح': 'Open',
+        'قيد المعالجة': 'In Progress',
+        'مغلق': 'Closed'
+      };
+
+      if (paginatedReports.length === 0) {
+        reportsCards.innerHTML = `<p class="text-gray-600 dark:text-gray-300 text-center col-span-full">${document.documentElement.lang === 'en' ? 'No reports available.' : 'لا توجد بلاغات متاحة.'}</p>`;
+        return;
+      }
+
+      paginatedReports.forEach(report => {
+        const card = document.createElement('div');
+        card.className = 'report-card flex flex-col p-6 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-200">${document.documentElement.lang === 'en' ? 'Report #' : 'تقرير رقم: '}${report.id}</h3>
+            <span class="px-3 py-1 text-white rounded-full text-sm font-semibold ${
+              report.status === 'مفتوح' ? 'status-open' :
+              report.status === 'قيد المعالجة' ? 'status-in-progress' : 'status-closed'
+            }">${document.documentElement.lang === 'en' ? statusTranslations[report.status] || report.status : report.status}</span>
+          </div>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>${document.documentElement.lang === 'en' ? 'Title:' : 'العنوان:'}</strong> ${report.title}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>${document.documentElement.lang === 'en' ? 'Type:' : 'النوع:'}</strong> ${document.documentElement.lang === 'en' ? typeTranslations[report.type] || report.type : report.type}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-2"><strong>${document.documentElement.lang === 'en' ? 'Location:' : 'الموقع:'}</strong> ${report.location}</p>
+          <p class="text-gray-600 dark:text-gray-300 mb-4"><strong>${document.documentElement.lang === 'en' ? 'Date:' : 'التاريخ:'}</strong> ${report.date}</p>
+          <div class="flex gap-2">
+            <button class="btn-primary view-report" data-id="${report.id}" data-en="View"><i class="fas fa-eye mr-2"></i>${document.documentElement.lang === 'en' ? 'View' : 'عرض'}</button>
+            <button class="btn-primary edit-report" data-id="${report.id}" data-en="Edit"><i class="fas fa-edit mr-2"></i>${document.documentElement.lang === 'en' ? 'Edit' : 'تعديل'}</button>
+          </div>
+        `;
+        reportsCards.appendChild(card);
+      });
+
+      // Pagination
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(filteredReports.length / itemsPerPage);
+      for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = i === page ? 'active' : '';
+        button.addEventListener('click', () => {
+          currentPage = i;
+          renderCards(currentPage);
+        });
+        pagination.appendChild(button);
+      }
+    }
+
+    // Search Functionality
+    document.getElementById('search-input').addEventListener('input', () => {
+      currentPage = 1;
+      renderCards(currentPage);
+    });
+
+    // Export to CSV
+    document.getElementById('export-csv').addEventListener('click', () => {
+      const headers = ['ID', 'Title', 'Type', 'Location', 'Date', 'Status', 'Description', 'Attachments'];
+      const csv = [
+        headers.join(','),
+        ...reports.map(report => [
+          report.id,
+          `"${report.title.replace(/"/g, '""')}"`,
+          report.type,
+          `"${report.location.replace(/"/g, '""')}"`,
+          report.date,
+          report.status,
+          `"${report.description.replace(/"/g, '""')}"`,
+          `"${report.attachments.map(att => att.name).join(';')}"`
+        ].join(','))
+      ].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'reports.csv';
+      link.click();
+      showNotification(document.documentElement.lang === 'en' ? 'Reports exported successfully!' : 'تم تصدير البلاغات بنجاح!', 'success');
+    });
+
+    // View/Edit Report
+    reportsCards.addEventListener('click', (e) => {
+      if (e.target.classList.contains('view-report') || e.target.closest('.view-report')) {
+        const id = e.target.dataset.id || e.target.closest('.view-report').dataset.id;
+        localStorage.setItem('selectedReportId', id);
+        window.location.href = 'report-details.html';
+      } else if (e.target.classList.contains('edit-report') || e.target.closest('.edit-report')) {
+        const id = e.target.dataset.id || e.target.closest('.edit-report').dataset.id;
+        localStorage.setItem('selectedReportId', id);
+        window.location.href = 'report-details.html';
+      }
+    });
+
+    // Initial Render
+    renderCards(currentPage);
+
+    // Logout
+    document.getElementById('logout-button').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('militaryNumber');
+      showNotification(document.documentElement.lang === 'en' ? 'Logged out successfully!' : 'تم تسجيل الخروج بنجاح!', 'success');
+      setTimeout(() => window.location.href = 'index.html', 1000);
+    });
+
+    // Particle Background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: Math.random() * 0.5 - 0.25,
+        vy: Math.random() * 0.5 - 0.25
+      });
+    }
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9377e7bbfb0849f2',t:'MTc0NTg1NzQxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>
