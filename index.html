@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>تسجيل الدخول - نظام متابعة البلاغات الأمنية</title>
+  <link rel="icon" type="image/png" href="https://www2.0zz0.com/2025/04/30/22/708132394.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Cairo', sans-serif;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1E3A8A 0%, #075985 100%);
+    }
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .background-logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: clamp(120px, 15vw, 150px);
+      height: auto;
+      opacity: 1;
+      z-index: 50;
+      pointer-events: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .background-logo:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+    }
+    
+    @media (max-width: 640px) {
+      .background-logo {
+        width: clamp(100px, 12vw, 120px);
+        top: 15px;
+        left: 15px;
+      }
+    }
+    .login-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      padding: 3rem;
+      max-width: 28rem;
+      width: 100%;
+      animation: fadeIn 0.8s ease-out;
+      z-index: 1;
+    }
+    .dark .login-card {
+      background: rgba(31, 41, 55, 0.9);
+      color: #F5F7FA;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    input {
+      transition: all 0.3s ease;
+      background: #F5F7FA;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+    }
+    .dark input {
+      background: #374151;
+      border-color: #4B5563;
+      color: #F5F7FA;
+    }
+    input:focus {
+      border-color: #4FC3F7;
+      box-shadow: 0 0 0 4px rgba(79, 195, 247, 0.4);
+      background: #FFFFFF;
+    }
+    .dark input:focus {
+      background: #4B5563;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0D47A1, #1565C0);
+      color: white;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-primary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .logo-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .logo-container:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(79, 195, 247, 0.5);
+    }
+    .logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      animation: subtleMove 5s ease-in-out infinite;
+    }
+    @keyframes subtleMove {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(2deg); }
+    }
+    .logo::after {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      background: linear-gradient(45deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+      opacity: 0;
+      animation: shine 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes shine {
+      0% { opacity: 0; transform: translateX(-100%); }
+      20% { opacity: 0.7; transform: translateX(0); }
+      40% { opacity: 0; transform: translateX(100%); }
+      100% { opacity: 0; transform: translateX(100%); }
+    }
+    .error-message {
+      background: #FFF3CD;
+      color: #856404;
+      padding: 0.75rem;
+      border-radius: 0.75rem;
+      display: none;
+      text-align: center;
+    }
+    .dark .error-message {
+      background: #854D0E;
+      color: #F5F7FA;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.5s ease-out;
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    .citizen-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #4FC3F7;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      font-size: 0.875rem;
+      text-decoration: none;
+      margin-top: 0.5rem;
+    }
+    .dark .citizen-button {
+      background: #075985;
+    }
+    .citizen-button:hover {
+      background: #0D47A1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .citizen-button i {
+      margin-left: 0.5rem;
+      font-size: 1rem;
+    }
+    footer a {
+      color: #F5F7FA;
+      transition: color 0.3s ease;
+    }
+    footer a:hover {
+      color: #4FC3F7;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://www2.0zz0.com/2025/04/30/14/456513836.png" alt="Background Logo" class="background-logo">
+  <canvas id="particles"></canvas>
+  <div class="login-card">
+    <div class="flex justify-between items-center mb-8">
+      <div class="logo-container">
+        <img src="https://www2.0zz0.com/2025/04/30/14/997971425.png" alt="Palestinian Police Logo" class="logo">
+      </div>
+      <button id="theme-toggle" class="text-gray-600 dark:text-gray-300">
+        <i class="fas fa-moon"></i>
+      </button>
+    </div>
+    <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-3 text-center">
+      تسجيل الدخول
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 text-center mb-6 text-base">
+      نظام متابعة البلاغات الأمنية
+    </p>
+    <div id="error-message" class="error-message"></div>
+    <div class="space-y-5">
+      <div>
+        <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2" for="military-number">
+          <i class="fas fa-id-badge mr-2 text-blue-400"></i>الرقم العسكري
+        </label>
+        <input id="military-number" type="text" placeholder="أدخل الرقم العسكري" class="tooltip" data-tooltip="يجب أن يكون 9 أرقام" />
+      </div>
+      <div>
+        <label class="block text-gray-700 dark:text-gray-300 font-semibold mb-2" for="password">
+          <i class="fas fa-lock mr-2 text-blue-400"></i>كلمة المرور
+        </label>
+        <input id="password" type="password" placeholder="أدخل كلمة المرور" class="tooltip" data-tooltip="8 أحرف على الأقل، تشمل رقم وحرف خاص" />
+      </div>
+      <button id="login-button" class="btn-primary w-full flex items-center justify-center">
+        <i class="fas fa-sign-in-alt mr-2"></i>تسجيل الدخول
+      </button>
+    </div>
+    <div class="mt-5 text-center space-y-2">
+      <div>
+        <a href="#" id="forgot-password" class="text-blue-400 hover:text-blue-500 hover:underline text-sm">
+          نسيت كلمة المرور؟
+        </a>
+      </div>
+      <div>
+        <a href="citizen-report.html" class="citizen-button">
+          بلاغ مواطن
+          <i class="fas fa-sign-in-alt"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+  <footer class="mt-12 text-white text-center text-xl">
+    <span data-en="All Rights Reserved ©2025 Palestine Police">جميع الحقوق محفوظة ©2025 لـ<a href="https://www.palpolice.ps/" target="_blank" class="underline hover:text-blue-300">شرطة فلسطين</a></span> | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300" data-en="Contact Support">تواصل مع الدعم</a>
+  </footer>
+  <script>
+    // Users data for login
+    const users = [
+      {
+        militaryNumber: '420165383',
+        password: 'pass123',
+        name: 'عمر أيمن عودة'
+      },
+      {
+        militaryNumber: '420165384',
+        password: 'pass123',
+        name: 'محمد احمد خالد'
+      }
+    ];
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.innerHTML = document.body.classList.contains('dark') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    }
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Login Logic
+    const loginButton = document.getElementById('login-button');
+    const forgotPasswordLink = document.getElementById('forgot-password');
+    const errorMessage = document.getElementById('error-message');
+    const militaryNumberInput = document.getElementById('military-number');
+    const passwordInput = document.getElementById('password');
+
+    militaryNumberInput.addEventListener('input', () => {
+      const value = militaryNumberInput.value;
+      if (!/^\d{0,9}$/.test(value)) {
+        militaryNumberInput.style.borderColor = '#EF4444';
+      } else {
+        militaryNumberInput.style.borderColor = '#e2e8f0';
+      }
+    });
+
+    passwordInput.addEventListener('input', () => {
+      const value = passwordInput.value;
+      if (value.length < 8 || !/[0-9]/.test(value) || !/[!@#$%]/.test(value)) {
+        passwordInput.style.borderColor = '#EF4444';
+      } else {
+        passwordInput.style.borderColor = '#e2e8f0';
+      }
+    });
+
+    loginButton.addEventListener('click', () => {
+      const militaryNumber = militaryNumberInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      if (!militaryNumber || !password) {
+        showNotification('يرجى إدخال الرقم العسكري وكلمة المرور', 'error');
+        errorMessage.textContent = 'يرجى إدخال الرقم العسكري وكلمة المرور. تواصل مع الدعم إذا استمر الخلل.';
+        errorMessage.style.display = 'block';
+        return;
+      }
+
+      const user = users.find(u => u.militaryNumber === militaryNumber && u.password === password);
+      if (user) {
+        localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('userName', user.name);
+        localStorage.setItem('militaryNumber', user.militaryNumber);
+        showNotification('تم تسجيل الدخول بنجاح!', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+      } else {
+        showNotification('الرقم العسكري أو كلمة المرور غير صحيحة', 'error');
+        errorMessage.textContent = 'الرقم العسكري أو كلمة المرور غير صحيحة. تواصل مع الدعم إذا استمر الخلل.';
+        errorMessage.style.display = 'block';
+      }
+    });
+
+    // Trigger login on Enter key press
+    [militaryNumberInput, passwordInput].forEach(input => {
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          loginButton.click();
+        }
+      });
+    });
+
+    forgotPasswordLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      showNotification('تواصل مع مسؤول النظام عبر واتساب.', 'error');
+      window.open('https://wa.me/+972566135007', '_blank');
+    });
+
+    // Particle Background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: Math.random() * 0.5 - 0.25,
+        vy: Math.random() * 0.5 - 0.25
+      });
+    }
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Auto-fill saved credentials if available
+    window.addEventListener('load', () => {
+      const savedMilitaryNumber = localStorage.getItem('militaryNumber');
+      if (savedMilitaryNumber) {
+        militaryNumberInput.value = savedMilitaryNumber;
+      }
+    });
+  </script>
+</body>
+</html>
