@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>بلاغ جديد - نظام متابعة البلاغات الأمنية</title>
+  <link rel="icon" type="image/png" href="https://www2.0zz0.com/2025/04/30/22/708132394.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body {
+      background: linear-gradient(135deg, #0D47A1 0%, #4FC3F7 100%);
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      position: relative;
+      overflow-x: hidden;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1E3A8A 0%, #075985 100%);
+    }
+    [lang="en"] {
+      direction: ltr;
+      font-family: 'Arial', sans-serif;
+    }
+    #particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0.5;
+      z-index: -1;
+    }
+    .background-logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: clamp(120px, 15vw, 150px);
+      height: auto;
+      opacity: 1;
+      z-index: 50;
+      pointer-events: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .background-logo:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+    }
+    @media (max-width: 640px) {
+      .background-logo {
+        width: clamp(100px, 12vw, 120px);
+        top: 15px;
+        left: 15px;
+      }
+    }
+    .sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(12px);
+      width: 16rem;
+      max-width: 80vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: -100%;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      transition: right 0.3s ease, transform 0.3s ease;
+      z-index: 20;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      right: 0;
+      transform: translateX(0);
+    }
+    .dark .sidebar {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F5F7FA;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      color: #333;
+      font-size: clamp(1rem, 2.5vw, 1.15rem);
+      transition: all 0.3s ease;
+    }
+    .dark .sidebar a, .dark .sidebar button {
+      color: #F5F7FA;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #4FC3F7;
+      color: white;
+      transform: scale(1.05);
+    }
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 19;
+    }
+    .sidebar-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 80vw;
+      }
+      .sidebar a, .sidebar button {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+    }
+    .form-container {
+      max-width: 100rem;
+      margin: 4rem auto;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+      padding: 3.5rem;
+      animation: fadeIn 0.6s ease-out;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .form-container:hover {
+      transform: scale(1.05);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+    .dark .form-container {
+      background: rgba(31, 41, 55, 0.9);
+      color: #F5F7FA;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 0.5rem;
+    }
+    .dark .form-group label {
+      color: #F5F7FA;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      padding: 0.75rem;
+      font-size: 1.2rem;
+      border: 1px solid #E2E8F0;
+      border-radius: 0.75rem;
+      background: #E2E8F0;
+      color: #333;
+      transition: border-color 0.3s ease;
+    }
+    .dark .form-group input, .dark .form-group select, .dark .form-group textarea {
+      border-color: #4B5563;
+      background: #4B5563;
+      color: #F5F7FA;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: #4FC3F7;
+      box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.3);
+    }
+    .form-group input.error, .form-group select.error {
+      border-color: #EF4444;
+    }
+    .error-message {
+      color: #EF4444;
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #0D47A1, #1565C0);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      font-size: 1.15rem;
+    }
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-primary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-primary:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .btn-secondary {
+      background: linear-gradient(90deg, #6B7280, #9CA3AF);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.75rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      font-size: 1.15rem;
+    }
+    .btn-secondary::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    .btn-secondary:hover::after {
+      width: 200px;
+      height: 200px;
+    }
+    .btn-secondary:hover {
+      transform: scale(1.03);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 2rem;
+      border-radius: 0.75rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.5s ease-out;
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: -2rem;
+      right: 0;
+      background: #333;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    [lang="en"] .tooltip:hover::after {
+      left: 0;
+      right: auto;
+    }
+    .icon-container {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .icon-container i {
+      font-size: 4rem;
+      transition: transform 0.3s ease;
+    }
+    .icon-container:hover i {
+      transform: scale(1.15);
+    }
+    .logo-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .logo-container:hover {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(79, 195, 247, 0.5);
+    }
+    .logo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      animation: subtleMove 5s ease-in-out infinite;
+    }
+    @keyframes subtleMove {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(2deg); }
+    }
+    .logo::after {
+      content: '';
+      position: absolute;
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
+      background: linear-gradient(45deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+      opacity: 0;
+      animation: shine 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes shine {
+      0% { opacity: 0; transform: translateX(-100%); }
+      20% { opacity: 0.7; transform: translateX(0); }
+      40% { opacity: 0; transform: translateX(100%); }
+      100% { opacity: 0; transform: translateX(100%); }
+    }
+    .map-container {
+      height: 300px;
+      border-radius: 1rem;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+    .drafts-container, .history-container {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .dark .drafts-container, .dark .history-container {
+      background: rgba(31, 41, 55, 0.95);
+    }
+    .drafts-container h2, .history-container h2 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 1rem;
+    }
+    .dark .drafts-container h2, .dark .history-container h2 {
+      color: #F5F7FA;
+    }
+    .draft-item, .history-item {
+      padding: 1rem;
+      background: #F5F7FA;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+    .dark .draft-item, .dark .history-item {
+      background: #374151;
+    }
+    .draft-item:hover, .history-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 80vw;
+      }
+      .sidebar a, .sidebar button {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+      .logo-container {
+        width: 60px;
+        height: 60px;
+      }
+      .form-container {
+        padding: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="https://www2.0zz0.com/2025/04/30/22/856475984.png" alt="Background Logo" class="background-logo">
+  <canvas id="particles"></canvas>
+  <button id="toggle-sidebar" class="btn-primary fixed top-4 right-4 z-30 tooltip" data-tooltip="فتح/إغلاق القائمة" data-en-tooltip="Open/Close Menu" aria-expanded="false">
+    <i class="fas fa-bars fa-2x"></i>
+  </button>
+  <div class="sidebar">
+    <div class="p-4 text-center">
+      <div class="logo-container">
+        <img src="https://www2.0zz0.com/2025/04/30/14/997971425.png" alt="Palestinian Police Logo" class="logo">
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 text-lg">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+    </div>
+    <div class="space-y-2">
+      <a href="dashboard.html" class="flex items-center"><i class="fas fa-tachometer-alt fa-2x mr-3"></i><span data-en="Dashboard">لوحة التحكم</span></a>
+      <a href="new-report.html" class="flex items-center"><i class="fas fa-plus fa-2x mr-3"></i><span data-en="New Report">بلاغ جديد</span></a>
+      <a href="reports-list.html" class="flex items-center"><i class="fas fa-list-alt fa-2x mr-3"></i><span data-en="Reports List">قائمة البلاغات</span></a>
+      <a href="tasks-center.html" class="flex items-center"><i class="fas fa-tasks fa-2x mr-3"></i><span data-en="Tasks Management Center">مركز إدارة المهام</span></a>
+      <a href="report-details.html" class="flex items-center"><i class="fas fa-file-alt fa-2x mr-3"></i><span data-en="Report Details">تفاصيل البلاغ</span></a>
+      <a href="admin-dashboard.html" class="flex items-center"><i class="fas fa-user-shield fa-2x mr-3"></i><span data-en="Admin Dashboard">لوحة الإدارة</span></a>
+      <a href="archived-reports.html" class="flex items-center"><i class="fas fa-archive fa-2x mr-3"></i><span data-en="Archived Reports">البلاغات المؤرشفة</span></a>
+      <a href="user-profile.html" class="flex items-center"><i class="fas fa-user fa-2x mr-3"></i><span data-en="User Profile">الملف الشخصي</span></a>
+      <a href="reports-analytics.html" class="flex items-center"><i class="fas fa-chart-bar fa-2x mr-3"></i><span data-en="Reports Analytics">تحليلات البلاغات</span></a>
+      <a href="support-center.html" class="flex items-center"><i class="fas fa-headset fa-2x mr-3"></i><span data-en="Support Center">مركز الدعم</span></a>
+      <a href="predictive-analytics.html" class="flex items-center"><i class="fas fa-brain fa-2x mr-3"></i><span data-en="Predictive Incident Analytics">تحليلات توقع الحوادث</span></a>
+      <a href="#" id="logout-button" class="flex items-center"><i class="fas fa-sign-out-alt fa-2x mr-3"></i><span data-en="Logout">تسجيل الخروج</span></a>
+      <button id="theme-toggle" class="flex items-center w-full"><i class="fas fa-moon fa-2x mr-3"></i><span data-en="Dark Mode">الوضع الليلي</span></button>
+      <button id="lang-toggle" class="flex items-center w-full"><i class="fas fa-globe fa-2x mr-3"></i><span data-en="Switch to English">تبديل إلى الإنجليزية</span></button>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="form-container">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-8" data-en="New Report">بلاغ جديد</h1>
+    <form id="report-form" class="form-grid">
+      <div class="form-group">
+        <label for="report-title" data-en="Report Title">عنوان البلاغ</label>
+        <input type="text" id="report-title" placeholder="مثال: حادث مروري في شارع الإرسال" data-en-placeholder="Example: Traffic accident on Al-Irsal Street" required />
+        <span class="error-message" id="report-title-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="report-type" data-en="Report Type">نوع البلاغ</label>
+        <select id="report-type" required>
+          <option value="" disabled selected data-en="Select Report Type">اختر نوع البلاغ</option>
+          <option value="مرور" data-en="Traffic">مرور</option>
+          <option value="جنائي" data-en="Criminal">جنائي</option>
+          <option value="مخالفات" data-en="Violations">مخالفات</option>
+          <option value="إداري" data-en="Administrative">إداري</option>
+          <option value="آخر" data-en="Other">آخر</option>
+        </select>
+        <span class="error-message" id="report-type-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="report-location" data-en="Location">الموقع</label>
+        <input type="text" id="report-location" placeholder="اختر الموقع من الخريطة" data-en-placeholder="Select location from the map" readonly required />
+        <input type="hidden" id="report-lat" />
+        <input type="hidden" id="report-lng" />
+        <div class="map-container" id="report-map"></div>
+        <span class="error-message" id="report-location-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="report-date" data-en="Date">التاريخ</label>
+        <input type="date" id="report-date" required />
+        <span class="error-message" id="report-date-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="report-status" data-en="Status">الحالة</label>
+        <select id="report-status" required>
+          <option value="مفتوح" data-en="Open">مفتوح</option>
+          <option value="قيد المعالجة" data-en="In Progress">قيد المعالجة</option>
+          <option value="مغلق" data-en="Closed">مغلق</option>
+        </select>
+        <span class="error-message" id="report-status-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="report-priority" data-en="Priority">الأولوية</label>
+        <select id="report-priority" required>
+          <option value="" disabled selected data-en="Select Priority">اختر الأولوية</option>
+          <option value="عادي" data-en="Normal">عادي</option>
+          <option value="عاجل" data-en="Urgent">عاجل</option>
+          <option value="طارئ" data-en="Emergency">طارئ</option>
+        </select>
+        <span class="error-message" id="report-priority-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="complainant-name" data-en="Complainant Name">اسم المشتكي</label>
+        <input type="text" id="complainant-name" placeholder="مثال: أحمد محمد" data-en-placeholder="Example: Ahmed Mohammed" />
+        <span class="error-message" id="complainant-name-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="complainant-id" data-en="ID Number">رقم الهوية</label>
+        <input type="text" id="complainant-id" placeholder="مثال: 123456789" data-en-placeholder="Example: 123456789" />
+        <span class="error-message" id="complainant-id-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="complainant-phone" data-en="Phone Number">رقم الهاتف</label>
+        <input type="tel" id="complainant-phone" placeholder="مثال: 0566135007" data-en-placeholder="Example: 0566135007" />
+        <span class="error-message" id="complainant-phone-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="complainant-email" data-en="Email">البريد الإلكتروني</label>
+        <input type="email" id="complainant-email" placeholder="مثال: example@domain.com" data-en-placeholder="Example: example@domain.com" />
+        <span class="error-message" id="complainant-email-error"></span>
+      </div>
+      <div class="form-group">
+        <label for="assigned-to" data-en="Assigned To">تعيين إلى</label>
+        <select id="assigned-to">
+          <option value="" data-en="Select Officer/Department">اختر ضابط/قسم</option>
+          <option value="ضابط أمن" data-en="Security Officer">ضابط أمن</option>
+          <option value="قسم المرور" data-en="Traffic Department">قسم المرور</option>
+          <option value="قسم التحقيقات" data-en="Investigations Department">قسم التحقيقات</option>
+          <option value="قسم الشرطة المجتمعية" data-en="Community Police">قسم الشرطة المجتمعية</option>
+        </select>
+        <span class="error-message" id="assigned-to-error"></span>
+      </div>
+      <div class="form-group col-span-2">
+        <label for="report-description" data-en="Description">الوصف</label>
+        <textarea id="report-description" rows="5" placeholder="مثال: وقع الحادث في شارع الإرسال بسبب السرعة الزائدة" data-en-placeholder="Example: The incident occurred on Al-Irsal Street due to speeding" required></textarea>
+        <span class="error-message" id="report-description-error"></span>
+      </div>
+      <div class="form-group col-span-2">
+        <label for="report-attachments" data-en="Attachments">المرفقات</label>
+        <input type="file" id="report-attachments" multiple accept="image/*,video/*,.pdf,.doc,.docx" />
+        <p class="text-sm text-gray-600 dark:text-gray-300" data-en="Note: Attachments are not stored due to storage limitations. Please retain original files.">
+          ملاحظة: المرفقات لا يتم تخزينها بسبب قيود التخزين. يرجى الاحتفاظ بالملفات الأصلية.
+        </p>
+        <span class="error-message" id="report-attachments-error"></span>
+      </div>
+      <div class="col-span-2 flex gap-4">
+        <button type="submit" class="btn-primary icon-container" data-en="Submit Report">
+          <i class="fas fa-plus text-yellow-400 text-[4rem]"></i>
+          <span data-en="Submit Report">إرسال البلاغ</span>
+        </button>
+        <button type="button" id="save-draft" class="btn-secondary icon-container" data-en="Save Draft">
+          <i class="fas fa-save text-green-400 text-[4rem]"></i>
+          <span data-en="Save Draft">حفظ كمسودة</span>
+        </button>
+      </div>
+    </form>
+    <div class="drafts-container">
+      <h2 data-en="Saved Drafts">المسودات المحفوظة</h2>
+      <div id="drafts-list" class="space-y-4"></div>
+    </div>
+    <div class="history-container">
+      <h2 data-en="Modification History">تاريخ التعديلات</h2>
+      <div id="history-list" class="space-y-4"></div>
+    </div>
+  </div>
+  <footer class="mt-12 text-white text-center text-xl">
+    <span data-en="All Rights Reserved ©2025 Palestine Police">جميع الحقوق محفوظة ©2025 لـ<a href="https://www.palpolice.ps/" target="_blank" class="underline hover:text-blue-300">شرطة فلسطين</a></span> | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300" data-en="Contact Support">تواصل مع الدعم</a>
+  </footer>
+  <script>
+    // إعداد وتصميم المهندس عمر أيمن عودة
+    // Check if user is logged in
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    } else {
+      const userName = localStorage.getItem('userName') || 'المستخدم';
+      document.getElementById('user-name').textContent = userName;
+    }
+
+    // Language Translations
+    const translations = {
+      ar: {
+        newReport: 'بلاغ جديد',
+        reportTitle: 'عنوان البلاغ',
+        reportType: 'نوع البلاغ',
+        selectReportType: 'اختر نوع البلاغ',
+        location: 'الموقع',
+        date: 'التاريخ',
+        status: 'الحالة',
+        priority: 'الأولوية',
+        selectPriority: 'اختر الأولوية',
+        complainantName: 'اسم المشتكي',
+        complainantId: 'رقم الهوية',
+        complainantPhone: 'رقم الهاتف',
+        complainantEmail: 'البريد الإلكتروني',
+        assignedTo: 'تعيين إلى',
+        description: 'الوصف',
+        attachments: 'المرفقات',
+        submitReport: 'إرسال البلاغ',
+        saveDraft: 'حفظ كمسودة',
+        savedDrafts: 'المسودات المحفوظة',
+        modificationHistory: 'تاريخ التعديلات',
+        noDrafts: 'لا توجد مسودات محفوظة',
+        noHistory: 'لا يوجد تاريخ تعديلات',
+        reportTitlePlaceholder: 'مثال: حادث مروري في شارع الإرسال',
+        locationPlaceholder: 'اختر الموقع من الخريطة',
+        descriptionPlaceholder: 'مثال: وقع الحادث في شارع الإرسال بسبب السرعة الزائدة',
+        complainantNamePlaceholder: 'مثال: أحمد محمد',
+        complainantIdPlaceholder: 'مثال: 123456789',
+        complainantPhonePlaceholder: 'مثال: 0566135007',
+        complainantEmailPlaceholder: 'مثال: example@domain.com',
+        attachmentsNote: 'ملاحظة: المرفقات لا يتم تخزينها بسبب قيود التخزين. يرجى الاحتفاظ بالملفات الأصلية.',
+        validation: {
+          required: 'هذا الحقل مطلوب',
+          invalidEmail: 'البريد الإلكتروني غير صالح',
+          invalidPhone: 'رقم الهاتف غير صالح (يجب أن يبدأ بـ 05 ويحتوي على 10 أرقام، مثال: 0566135007)',
+          invalidId: 'رقم الهوية يجب أن يكون 9 أرقام'
+        },
+        success: {
+          reportSubmitted: 'تم إرسال البلاغ بنجاح إلى قائمة البلاغات!',
+          draftSaved: 'تم حفظ المسودة بنجاح!',
+          logoutSuccess: 'تم تسجيل الخروج بنجاح!'
+        },
+        error: {
+          fillAllFields: 'يرجى ملء جميع الحقول المطلوبة وتحديد موقع على الخريطة!',
+          locationError: 'تعذر تحديد الموقع. يرجى السماح بالوصول إلى الموقع.',
+          noGeolocation: 'المتصفح لا يدعم تحديد الموقع.'
+        },
+        currentLocation: 'موقعك الحالي',
+        coordinates: 'إحداثيات',
+        ramallahLocation: `رام الله (إحداثيات: \${lat}, \${lng})`,
+        untitled: 'بدون عنوان',
+        createdAt: 'تاريخ الإنشاء',
+        load: 'تحميل',
+        delete: 'حذف',
+        reportId: 'معرف البلاغ',
+        modifiedBy: 'تم التعديل بواسطة',
+        modifiedAt: 'تاريخ التعديل',
+        changes: 'التغييرات',
+        dayMode: 'الوضع النهاري',
+        darkMode: 'الوضع الليلي',
+        switchLanguage: 'تبديل إلى الإنجليزية'
+      },
+      en: {
+        newReport: 'New Report',
+        reportTitle: 'Report Title',
+        reportType: 'Report Type',
+        selectReportType: 'Select Report Type',
+        location: 'Location',
+        date: 'Date',
+        status: 'Status',
+        priority: 'Priority',
+        selectPriority: 'Select Priority',
+        complainantName: 'Complainant Name',
+        complainantId: 'ID Number',
+        complainantPhone: 'Phone Number',
+        complainantEmail: 'Email',
+        assignedTo: 'Assigned To',
+        description: 'Description',
+        attachments: 'Attachments',
+        submitReport: 'Submit Report',
+        saveDraft: 'Save Draft',
+        savedDrafts: 'Saved Drafts',
+        modificationHistory: 'Modification History',
+        noDrafts: 'No saved drafts',
+        noHistory: 'No modification history',
+        reportTitlePlaceholder: 'Example: Traffic accident on Al-Irsal Street',
+        locationPlaceholder: 'Select location from the map',
+        descriptionPlaceholder: 'Example: The incident occurred on Al-Irsal Street due to speeding',
+        complainantNamePlaceholder: 'Example: Ahmed Mohammed',
+        complainantIdPlaceholder: 'Example: 123456789',
+        complainantPhonePlaceholder: 'Example: 0566135007',
+        complainantEmailPlaceholder: 'Example: example@domain.com',
+        attachmentsNote: 'Note: Attachments are not stored due to storage limitations. Please retain original files.',
+        validation: {
+          required: 'This field is required',
+          invalidEmail: 'Invalid email address',
+          invalidPhone: 'Invalid phone number (must start with 05 and be 10 digits, e.g., 0566135007)',
+          invalidId: 'ID number must be 9 digits'
+        },
+        success: {
+          reportSubmitted: 'Report successfully sent to the reports list!',
+          draftSaved: 'Draft saved successfully!',
+          logoutSuccess: 'Logged out successfully!'
+        },
+        error: {
+          fillAllFields: 'Please fill all required fields and select a location on the map!',
+          locationError: 'Unable to determine location. Please allow location access.',
+          noGeolocation: 'Browser does not support geolocation.'
+        },
+        currentLocation: 'Your current location',
+        coordinates: 'Coordinates',
+        ramallahLocation: `Ramallah (Coordinates: \${lat}, \${lng})`,
+        untitled: 'Untitled',
+        createdAt: 'Created At',
+        load: 'Load',
+        delete: 'Delete',
+        reportId: 'Report ID',
+        modifiedBy: 'Modified By',
+        modifiedAt: 'Modified At',
+        changes: 'Changes',
+        dayMode: 'Light Mode',
+        darkMode: 'Dark Mode',
+        switchLanguage: 'Switch to Arabic'
+      }
+    };
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.querySelector('span').textContent = document.body.classList.contains('dark') ? translations[currentLang].dayMode : translations[currentLang].darkMode;
+      themeToggle.querySelector('span').setAttribute('data-en', document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode');
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.querySelector('span').textContent = translations[currentLang].dayMode;
+      themeToggle.querySelector('span').setAttribute('data-en', 'Light Mode');
+    }
+
+    // Language Toggle
+    let currentLang = localStorage.getItem('language') || 'ar';
+    const langToggle = document.getElementById('lang-toggle');
+    function updateLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('language', lang);
+      document.documentElement.lang = lang;
+      document.title = translations[lang].newReport + ' - Security Reports System';
+      document.querySelectorAll('[data-en]').forEach(el => {
+        const key = el.getAttribute('data-en').toLowerCase().replace(/\s+/g, '');
+        el.textContent = translations[lang][key] || el.textContent;
+      });
+      document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-en-placeholder').toLowerCase().replace(/\s+/g, '');
+        el.placeholder = translations[lang][key] || el.placeholder;
+      });
+      document.querySelectorAll('[data-en-tooltip]').forEach(el => {
+        const key = el.getAttribute('data-en-tooltip').toLowerCase().replace(/\s+/g, '');
+        el.setAttribute('data-tooltip', translations[lang][key] || el.getAttribute('data-tooltip'));
+      });
+      langToggle.querySelector('span').textContent = translations[lang].switchLanguage;
+      langToggle.querySelector('span').setAttribute('data-en', lang === 'en' ? 'Switch to Arabic' : 'Switch to English');
+      updateDraftsList();
+      updateHistoryList();
+    }
+    langToggle.addEventListener('click', () => {
+      updateLanguage(currentLang === 'ar' ? 'en' : 'ar');
+    });
+    updateLanguage(currentLang);
+
+    // Sidebar Toggle
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    function toggleSidebarState() {
+      sidebar.classList.toggle('active');
+      sidebarOverlay.classList.toggle('active');
+      toggleSidebar.setAttribute('aria-expanded', sidebar.classList.contains('active'));
+    }
+
+    toggleSidebar.addEventListener('click', toggleSidebarState);
+    sidebarOverlay.addEventListener('click', toggleSidebarState);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('active')) {
+        toggleSidebarState();
+      }
+    });
+    toggleSidebar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleSidebarState();
+      }
+    });
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Initialize Map
+    const map = L.map('report-map').setView([31.9044, 35.2034], 13); // Ramallah center
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(map);
+
+    // Locate user
+    let currentMarker = null;
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+        const userLat = position.coords.latitude;
+        const userLng = position.coords.longitude;
+        map.setView([userLat, userLng], 15);
+        currentMarker = L.marker([userLat, userLng], {
+          icon: L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41]
+          })
+        }).addTo(map)
+          .bindPopup(translations[currentLang].currentLocation).openPopup();
+        document.getElementById('report-lat').value = userLat;
+        document.getElementById('report-lng').value = userLng;
+        reverseGeocode(userLat, userLng).then(address => {
+          document.getElementById('report-location').value = address;
+        });
+      }, function(error) {
+        console.error('خطأ في تحديد الموقع:', error);
+        showNotification(translations[currentLang].error.locationError, 'error');
+      }, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
+    } else {
+      showNotification(translations[currentLang].error.noGeolocation, 'error');
+    }
+
+    // Reverse Geocoding with Nominatim
+    async function reverseGeocode(lat, lng) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18`, {
+          headers: {
+            'User-Agent': 'SecurityReportsApp/1.0 (Contact: omar.ayman@example.com)'
+          }
+        });
+        const data = await response.json();
+        if (data && data.display_name) {
+          return data.display_name;
+        } else {
+          return translations[currentLang].ramallahLocation.replace('${lat}', lat.toFixed(4)).replace('${lng}', lng.toFixed(4));
+        }
+      } catch (error) {
+        console.error('خطأ في عكس الترميز الجغرافي:', error);
+        return translations[currentLang].ramallahLocation.replace('${lat}', lat.toFixed(4)).replace('${lng}', lng.toFixed(4));
+      }
+    }
+
+    // Add marker on map click
+    map.on('click', async function(e) {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      document.getElementById('report-lat').value = lat;
+      document.getElementById('report-lng').value = lng;
+
+      const address = await reverseGeocode(lat, lng);
+      document.getElementById('report-location').value = address;
+
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+      currentMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<b>${translations[currentLang].location}:</b> ${address}<br><i>${translations[currentLang].coordinates}: ${lat.toFixed(4)}, ${lng.toFixed(4)}</i>`)
+        .openPopup();
+    });
+
+    // Validation Functions
+    function validateEmail(email) {
+      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return re.test(email);
+    }
+
+    function validatePhone(phone) {
+      const re = /^05\d{8}$/;
+      return re.test(phone);
+    }
+
+    function validateId(id) {
+      const re = /^\d{9}$/;
+      return re.test(id);
+    }
+
+    function validateForm() {
+      let isValid = true;
+      const fields = [
+        { id: 'report-title', required: true },
+        { id: 'report-type', required: true },
+        { id: 'report-location', required: true },
+        { id: 'report-date', required: true },
+        { id: 'report-status', required: true },
+        { id: 'report-priority', required: true },
+        { id: 'report-description', required: true },
+        { id: 'complainant-name', required: false },
+        { id: 'complainant-id', required: false, validate: validateId, errorMessage: translations[currentLang].validation.invalidId },
+        { id: 'complainant-phone', required: false, validate: validatePhone, errorMessage: translations[currentLang].validation.invalidPhone },
+        { id: 'complainant-email', required: false, validate: validateEmail, errorMessage: translations[currentLang].validation.invalidEmail },
+        { id: 'assigned-to', required: false }
+      ];
+
+      fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        const errorElement = document.getElementById(`${field.id}-error`);
+        errorElement.textContent = '';
+        element.classList.remove('error');
+
+        if (field.required && !element.value.trim()) {
+          errorElement.textContent = translations[currentLang].validation.required;
+          element.classList.add('error');
+          isValid = false;
+        } else if (field.validate && element.value.trim() && !field.validate(element.value)) {
+          errorElement.textContent = field.errorMessage;
+          element.classList.add('error');
+          isValid = false;
+        }
+      });
+
+      return isValid;
+    }
+
+    // Save Draft
+    document.getElementById('save-draft').addEventListener('click', () => {
+      const reportData = {
+        title: document.getElementById('report-title').value.trim(),
+        type: document.getElementById('report-type').value,
+        location: document.getElementById('report-location').value.trim(),
+        lat: document.getElementById('report-lat').value,
+        lng: document.getElementById('report-lng').value,
+        date: document.getElementById('report-date').value,
+        status: document.getElementById('report-status').value,
+        priority: document.getElementById('report-priority').value,
+        description: document.getElementById('report-description').value.trim(),
+        complainantName: document.getElementById('complainant-name').value.trim(),
+        complainantId: document.getElementById('complainant-id').value.trim(),
+        complainantPhone: document.getElementById('complainant-phone').value.trim(),
+        complainantEmail: document.getElementById('complainant-email').value.trim(),
+        assignedTo: document.getElementById('assigned-to').value,
+        attachments: Array.from(document.getElementById('report-attachments').files).map(file => ({
+          name: file.name,
+          size: file.size
+        })),
+        draftId: Date.now(),
+        createdAt: new Date().toISOString()
+      };
+
+      let drafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+      drafts.push(reportData);
+      localStorage.setItem('drafts', JSON.stringify(drafts));
+      showNotification(translations[currentLang].success.draftSaved, 'success');
+      updateDraftsList();
+    });
+
+    // Load Draft
+    function loadDraft(draftId) {
+      let drafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+      const draft = drafts.find(d => d.draftId === draftId);
+      if (draft) {
+        document.getElementById('report-title').value = draft.title || '';
+        document.getElementById('report-type').value = draft.type || '';
+        document.getElementById('report-location').value = draft.location || '';
+        document.getElementById('report-lat').value = draft.lat || '';
+        document.getElementById('report-lng').value = draft.lng || '';
+        document.getElementById('report-date').value = draft.date || '';
+        document.getElementById('report-status').value = draft.status || '';
+        document.getElementById('report-priority').value = draft.priority || '';
+        document.getElementById('report-description').value = draft.description || '';
+        document.getElementById('complainant-name').value = draft.complainantName || '';
+        document.getElementById('complainant-id').value = draft.complainantId || '';
+        document.getElementById('complainant-phone').value = draft.complainantPhone || '';
+        document.getElementById('complainant-email').value = draft.complainantEmail || '';
+        document.getElementById('assigned-to').value = draft.assignedTo || '';
+
+        if (draft.lat && draft.lng) {
+          if (currentMarker) {
+            map.removeLayer(currentMarker);
+          }
+          currentMarker = L.marker([draft.lat, draft.lng]).addTo(map)
+            .bindPopup(`<b>${translations[currentLang].location}:</b> ${draft.location}<br><i>${translations[currentLang].coordinates}: ${draft.lat}, ${draft.lng}</i>`)
+            .openPopup();
+          map.setView([draft.lat, draft.lng], 15);
+        }
+      }
+    }
+
+    // Update Drafts List
+    function updateDraftsList() {
+      const draftsList = document.getElementById('drafts-list');
+      draftsList.innerHTML = '';
+      let drafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+      if (drafts.length === 0) {
+        draftsList.innerHTML = `<p class="text-gray-600 dark:text-gray-300">${translations[currentLang].noDrafts}</p>`;
+        return;
+      }
+
+      drafts.forEach(draft => {
+        const draftItem = document.createElement('div');
+        draftItem.className = 'draft-item';
+        draftItem.innerHTML = `
+          <p class="font-semibold text-gray-800 dark:text-gray-200">${draft.title || translations[currentLang].untitled}</p>
+          <p class="text-gray-600 dark:text-gray-300">${translations[currentLang].createdAt}: ${new Date(draft.createdAt).toLocaleString()}</p>
+          <button class="btn-primary mt-2" onclick="loadDraft(${draft.draftId})">${translations[currentLang].load}</button>
+          <button class="btn-secondary mt-2 ml-2" onclick="deleteDraft(${draft.draftId})">${translations[currentLang].delete}</button>
+        `;
+        draftsList.appendChild(draftItem);
+      });
+    }
+
+    // Delete Draft
+    function deleteDraft(draftId) {
+      let drafts = JSON.parse(localStorage.getItem('drafts') || '[]');
+      drafts = drafts.filter(d => d.draftId !== draftId);
+      localStorage.setItem('drafts', JSON.stringify(drafts));
+      updateDraftsList();
+    }
+
+    // Update Modification History
+    function updateHistoryList(reportId = null) {
+      const historyList = document.getElementById('history-list');
+      historyList.innerHTML = '';
+      let history = JSON.parse(localStorage.getItem('reportHistory') || '[]');
+      if (reportId) {
+        history = history.filter(h => h.reportId === reportId);
+      }
+      if (history.length === 0) {
+        historyList.innerHTML = `<p class="text-gray-600 dark:text-gray-300">${translations[currentLang].noHistory}</p>`;
+        return;
+      }
+
+      history.forEach(entry => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.innerHTML = `
+          <p class="font-semibold text-gray-800 dark:text-gray-200">${translations[currentLang].reportId}: ${entry.reportId}</p>
+          <p class="text-gray-600 dark:text-gray-300">${translations[currentLang].modifiedBy}: ${entry.modifiedBy}</p>
+          <p class="text-gray-600 dark:text-gray-300">${translations[currentLang].modifiedAt}: ${new Date(entry.modifiedAt).toLocaleString()}</p>
+          <p class="text-gray-600 dark:text-gray-300">${translations[currentLang].changes}: ${entry.changes}</p>
+        `;
+        historyList.appendChild(historyItem);
+      });
+    }
+
+    // Form Submission
+    document.getElementById('report-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!validateForm()) {
+        showNotification(translations[currentLang].error.fillAllFields, 'error');
+        return;
+      }
+
+      const title = document.getElementById('report-title').value.trim();
+      const type = document.getElementById('report-type').value;
+      const location = document.getElementById('report-location').value.trim();
+      const lat = document.getElementById('report-lat').value;
+      const lng = document.getElementById('report-lng').value;
+      const date = document.getElementById('report-date').value;
+      const status = document.getElementById('report-status').value;
+      const priority = document.getElementById('report-priority').value;
+      const description = document.getElementById('report-description').value.trim();
+      const complainantName = document.getElementById('complainant-name').value.trim();
+      const complainantId = document.getElementById('complainant-id').value.trim();
+      const complainantPhone = document.getElementById('complainant-phone').value.trim();
+      const complainantEmail = document.getElementById('complainant-email').value.trim();
+      const assignedTo = document.getElementById('assigned-to').value;
+      const attachments = document.getElementById('report-attachments').files;
+
+      // Save report
+      let reports = JSON.parse(localStorage.getItem('reports') || '[]');
+      const maxId = reports.length > 0 ? Math.max(...reports.map(r => r.id)) : 0;
+      const newReport = {
+        id: maxId + 1,
+        title,
+        type,
+        location,
+        lat: parseFloat(lat),
+        lng: parseFloat(lng),
+        date,
+        status,
+        priority,
+        description,
+        complainantName,
+        complainantId,
+        complainantPhone,
+        complainantEmail,
+        assignedTo,
+        archived: false,
+        attachments: Array.from(attachments).map(file => ({
+          name: file.name,
+          size: file.size
+        })),
+        createdAt: new Date().toISOString(),
+        modifiedAt: new Date().toISOString(),
+        modifiedBy: localStorage.getItem('userName') || 'المستخدم'
+      };
+      reports.push(newReport);
+      localStorage.setItem('reports', JSON.stringify(reports));
+
+      // Save modification history
+      let history = JSON.parse(localStorage.getItem('reportHistory') || '[]');
+      history.push({
+        reportId: newReport.id,
+        modifiedBy: newReport.modifiedBy,
+        modifiedAt: newReport.modifiedAt,
+        changes: 'إنشاء بلاغ جديد'
+      });
+      localStorage.setItem('reportHistory', JSON.stringify(history));
+
+      // Create a task for high-priority reports
+      if (priority === 'طارئ' || priority === 'عاجل') {
+        let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+        const maxTaskId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) : 0;
+        tasks.push({
+          id: maxTaskId + 1,
+          reportId: newReport.id,
+          title: `معالجة بلاغ: ${title}`,
+          status: 'open',
+          priority: priority === 'طارئ' ? 'emergency' : 'urgent',
+          assignedTo: assignedTo || localStorage.getItem('userName') || 'غير محدد',
+          dueDate: new Date(new Date().setDate(new Date().getDate() + (priority === 'طارئ' ? 1 : 3))).toISOString().split('T')[0]
+        });
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+      }
+
+      showNotification(translations[currentLang].success.reportSubmitted, 'success');
+      document.getElementById('report-form').reset();
+      document.getElementById('report-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('report-location').value = '';
+      document.getElementById('report-lat').value = '';
+      document.getElementById('report-lng').value = '';
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+        currentMarker = null;
+      }
+      updateDraftsList();
+      updateHistoryList();
+    });
+
+    // Logout
+    document.getElementById('logout-button').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('militaryNumber');
+      showNotification(translations[currentLang].success.logoutSuccess, 'success');
+      setTimeout(() => window.location.href = 'index.html', 1000);
+    });
+
+    // Particle Background
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = [];
+    for (let i = 0; i < 50; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2 + 1,
+        vx: Math.random() * 0.5 - 0.25,
+        vy: Math.random() * 0.5 - 0.25
+      });
+    }
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // Initialize
+    document.getElementById('report-date').value = new Date().toISOString().split('T')[0];
+    updateDraftsList();
+    updateHistoryList();
+  </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'939ecb5138bbbcfb',t:'MTc0NjI2NTE5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>

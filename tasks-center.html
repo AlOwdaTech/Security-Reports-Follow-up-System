@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مركز إدارة المهام - نظام متابعة البلاغات الأمنية</title>
+  <link rel="icon" type="image/png" href="https://www2.0zz0.com/2025/04/30/22/708132394.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1E3A8A 0%, #60A5FA 100%);
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      transition: background 0.3s ease;
+    }
+    body.dark {
+      background: linear-gradient(135deg, #1F2937 0%, #4B5563 100%);
+    }
+    [lang="en"] {
+      direction: ltr;
+      font-family: 'Arial', sans-serif;
+    }
+    .logo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      width: clamp(100px, 12vw, 120px);
+      opacity: 0.9;
+      z-index: 50;
+      transition: transform 0.3s ease;
+    }
+    .logo:hover {
+      transform: scale(1.05);
+    }
+    .sidebar {
+      background: rgba(255, 255, 255, 0.95);
+      width: 18rem;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      right: -100%;
+      box-shadow: -4px 0 15px rgba(0, 0, 0, 0.1);
+      transition: right 0.3s ease;
+      z-index: 20;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      right: 0;
+    }
+    .dark .sidebar {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F3F4F6;
+    }
+    .sidebar a, .sidebar button {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      color: #1F2937;
+      font-size: 1.1rem;
+      transition: background 0.3s ease;
+      border-radius: 0.5rem;
+      margin: 0.5rem;
+    }
+    .dark .sidebar a, .dark .sidebar button {
+      color: #F3F4F6;
+    }
+    .sidebar a:hover, .sidebar button:hover {
+      background: #60A5FA;
+      color: white;
+    }
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 19;
+    }
+    .sidebar-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .table-container {
+      max-width: 1200px;
+      margin: 4rem auto;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      transition: transform 0.3s ease;
+    }
+    .table-container:hover {
+      transform: translateY(-3px);
+    }
+    .dark .table-container {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F3F4F6;
+    }
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .search-bar input, .search-bar select {
+      flex: 1;
+      min-width: 150px;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: 1px solid #D1D5DB;
+      border-radius: 0.5rem;
+      background: #F9FAFB;
+      color: #1F2937;
+      transition: border-color 0.3s ease;
+    }
+    .dark .search-bar input, .dark .search-bar select {
+      border-color: #4B5563;
+      background: #374151;
+      color: #F3F4F6;
+    }
+    .search-bar input:focus, .search-bar select:focus {
+      outline: none;
+      border-color: #60A5FA;
+      box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+    }
+    .btn-primary {
+      background: #3B82F6;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-primary:hover {
+      background: #1E40AF;
+      transform: translateY(-1px);
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+    .pagination button {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      background: #F3F4F6;
+      color: #1F2937;
+      transition: all 0.3s ease;
+    }
+    .dark .pagination button {
+      background: #4B5563;
+      color: #F3F4F6;
+    }
+    .pagination button.active {
+      background: #60A5FA;
+      color: white;
+    }
+    .pagination button:hover {
+      background: #60A5FA;
+      color: white;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      color: white;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .notification.success {
+      background: #10B981;
+    }
+    .notification.error {
+      background: #EF4444;
+    }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      top: -2rem;
+      right: 0;
+      background: #1F2937;
+      color: white;
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      z-index: 10;
+      white-space: nowrap;
+    }
+    [lang="en"] .tooltip:hover::after {
+      left: 0;
+      right: auto;
+    }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+    .modal-content {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+    .dark .modal-content {
+      background: rgba(31, 41, 55, 0.95);
+      color: #F3F4F6;
+    }
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: right;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .dark th, .dark td {
+      border-bottom: 1px solid #4B5563;
+    }
+    th {
+      background: #F9FAFB;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      color: #1F2937;
+    }
+    .dark th {
+      background: #374151;
+      color: #F3F4F6;
+    }
+    tr:hover {
+      background: rgba(96, 165, 250, 0.1);
+    }
+    .sortable-ghost {
+      background: rgba(96, 165, 250, 0.2) !important;
+    }
+    .status-open { background: #EF4444; color: white; }
+    .status-in-progress { background: #FBBF24; color: #1F2937; }
+    .status-completed { background: #10B981; color: white; }
+    .status-delayed { background: #6B7280; color: white; }
+    .priority-high { background: #EF4444; color: white; }
+    .priority-medium { background: #FBBF24; color: #1F2937; }
+    .priority-low { background: #10B981; color: white; }
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: #E5E7EB;
+      overflow: hidden;
+    }
+    .dark .progress-bar {
+      background: #4B5563;
+    }
+    .progress-bar div {
+      height: 100%;
+      transition: width 0.5s ease;
+    }
+    .urgent-task {
+      border-left: 4px solid #EF4444;
+    }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 80vw;
+      }
+      .sidebar a, .sidebar button {
+        padding: 0.75rem;
+        font-size: 1rem;
+      }
+      .table-container {
+        padding: 1rem;
+      }
+      .search-bar {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .logo {
+        width: 100px;
+        top: 15px;
+        left: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img src="https://www2.0zz0.com/2025/04/30/22/856475984.png" alt="Logo" class="logo">
+  <button id="toggle-sidebar" class="btn-primary fixed top-4 right-4 z-30 tooltip" data-tooltip="فتح/إغلاق القائمة" data-en-tooltip="Open/Close Menu">
+    <i class="fas fa-bars"></i>
+  </button>
+  <div class="sidebar">
+    <div class="p-4 text-center">
+      <img src="https://www2.0zz0.com/2025/04/30/14/997971425.png" alt="Palestinian Police Logo" class="w-20 mx-auto mb-2">
+      <p class="text-gray-600 dark:text-gray-300">مرحبًا، <span id="user-name">عمر أيمن عودة</span></p>
+    </div>
+    <div class="space-y-2">
+      <a href="dashboard.html"><i class="fas fa-tachometer-alt mr-3"></i><span data-en="Dashboard">لوحة التحكم</span></a>
+      <a href="new-report.html"><i class="fas fa-plus mr-3"></i><span data-en="New Report">بلاغ جديد</span></a>
+      <a href="reports-list.html"><i class="fas fa-list-alt mr-3"></i><span data-en="Reports List">قائمة البلاغات</span></a>
+      <a href="tasks-center.html"><i class="fas fa-tasks mr-3"></i><span data-en="Tasks Management Center">مركز إدارة المهام</span></a>
+      <a href="report-details.html"><i class="fas fa-file-alt mr-3"></i><span data-en="Report Details">تفاصيل البلاغ</span></a>
+      <a href="admin-dashboard.html"><i class="fas fa-user-shield mr-3"></i><span data-en="Admin Dashboard">لوحة الإدارة</span></a>
+      <a href="archived-reports.html"><i class="fas fa-archive mr-3"></i><span data-en="Archived Reports">البلاغات المؤرشفة</span></a>
+      <a href="user-profile.html"><i class="fas fa-user mr-3"></i><span data-en="User Profile">الملف الشخصي</span></a>
+      <a href="reports-analytics.html"><i class="fas fa-chart-bar mr-3"></i><span data-en="Reports Analytics">تحليلات البلاغات</span></a>
+      <a href="support-center.html"><i class="fas fa-headset mr-3"></i><span data-en="Support Center">مركز الدعم</span></a>
+      <a href="predictive-analytics.html"><i class="fas fa-brain mr-3"></i><span data-en="Predictive Incident Analytics">تحليلات توقع الحوادث</span></a>
+      <a href="#" id="logout-button"><i class="fas fa-sign-out-alt mr-3"></i><span data-en="Logout">تسجيل الخروج</span></a>
+      <button id="theme-toggle"><i class="fas fa-moon mr-3"></i><span data-en="Dark Mode">الوضع الليلي</span></button>
+      <button id="lang-toggle"><i class="fas fa-globe mr-3"></i><span data-en="Switch to Arabic">تبديل إلى الإنجليزية</span></button>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="table-container">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4" data-en="Tasks Management Center">مركز إدارة المهام</h1>
+    <div class="search-bar">
+      <i class="fas fa-search text-blue-500"></i>
+      <input type="text" id="search-input" placeholder="ابحث حسب معرف المهمة، البلاغ، الجهة المكلفة أو الموقع..." data-en-placeholder="Search by task ID, report ID, assignee, or location..." />
+      <select id="filter-status">
+        <option value="">كل الحالات</option>
+        <option value="مفتوحة">مفتوحة</option>
+        <option value="قيد التنفيذ">قيد التنفيذ</option>
+        <option value="مكتملة">مكتملة</option>
+        <option value="متأخرة">متأخرة</option>
+      </select>
+      <select id="filter-priority">
+        <option value="">كل الأولويات</option>
+        <option value="عالية">عالية</option>
+        <option value="متوسطة">متوسطة</option>
+        <option value="منخفضة">منخفضة</option>
+      </select>
+      <select id="filter-assignee">
+        <option value="">كل الجهات المكلفة</option>
+      </select>
+      <select id="filter-report-type">
+        <option value="">كل أنواع البلاغات</option>
+        <option value="مرور">مرور</option>
+        <option value="جنائي">جنائي</option>
+        <option value="مخالفات">مخالفات</option>
+        <option value="إداري">إداري</option>
+        <option value="آخر">آخر</option>
+      </select>
+      <button id="add-task" class="btn-primary tooltip" data-tooltip="إنشاء مهمة جديدة" data-en-tooltip="Create New Task"><i class="fas fa-plus"></i></button>
+      <button id="sync-tasks" class="btn-primary tooltip" data-tooltip="مزامنة المهام" data-en-tooltip="Sync Tasks"><i class="fas fa-sync"></i></button>
+      <button id="show-analytics" class="btn-primary tooltip" data-tooltip="تحليلات الأداء" data-en-tooltip="Performance Analytics"><i class="fas fa-chart-pie"></i></button>
+    </div>
+    <div class="table-responsive">
+      <table id="tasks-table">
+        <thead>
+          <tr>
+            <th data-en="Task ID">معرف المهمة</th>
+            <th data-en="Task Details">تفاصيل المهمة</th>
+            <th data-en="Report ID">معرف البلاغ</th>
+            <th data-en="Report Type">نوع البلاغ</th>
+            <th data-en="Location">الموقع</th>
+            <th data-en="Status">حالة التنفيذ</th>
+            <th data-en="Priority">مستوى الأولوية</th>
+            <th data-en="Assigned To">الجهة المكلفة</th>
+            <th data-en="Assignment Date">تاريخ التكليف</th>
+            <th data-en="Deadline">الموعد النهائي</th>
+            <th data-en="Progress">التقدم</th>
+            <th data-en="Actions">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="tasks-body"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+  <footer class="mt-8 text-white text-center">
+    <span data-en="All Rights Reserved ©2025 Palestine Police">جميع الحقوق محفوظة ©2025 <a href="https://www.palpolice.ps/" target="_blank" class="underline hover:text-blue-300">شرطة فلسطين</a></span> | 
+    <a href="https://wa.me/+972566135007" target="_blank" class="underline hover:text-blue-300" data-en="Contact Support">تواصل مع الدعم</a>
+  </footer>
+  <script>
+    // Authentication Check
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('user-name').textContent = localStorage.getItem('userName') || 'المستخدم';
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+      themeToggle.querySelector('span').textContent = document.body.classList.contains('dark') ? 'الوضع النهاري' : 'الوضع الليلي';
+      themeToggle.querySelector('span').setAttribute('data-en', document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode');
+      renderTasks(currentPage);
+    });
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark');
+      themeToggle.querySelector('span').textContent = 'الوضع النهاري';
+      themeToggle.querySelector('span').setAttribute('data-en', 'Light Mode');
+    }
+
+    // Language Toggle
+    const langToggle = document.getElementById('lang-toggle');
+    langToggle.addEventListener('click', () => {
+      const isArabic = document.documentElement.lang === 'ar';
+      document.documentElement.lang = isArabic ? 'en' : 'ar';
+      document.querySelectorAll('[data-en]').forEach(el => {
+        el.textContent = isArabic ? el.getAttribute('data-en') : el.getAttribute('data-ar') || el.textContent;
+      });
+      document.querySelectorAll('[data-en-placeholder]').forEach(el => {
+        el.placeholder = isArabic ? el.getAttribute('data-en-placeholder') : el.getAttribute('data-ar-placeholder') || el.placeholder;
+      });
+      document.querySelectorAll('[data-en-tooltip]').forEach(el => {
+        el.setAttribute('data-tooltip', isArabic ? el.getAttribute('data-en-tooltip') : el.getAttribute('data-ar-tooltip') || el.getAttribute('data-tooltip'));
+      });
+      langToggle.querySelector('span').textContent = isArabic ? 'تبديل إلى العربية' : 'تبديل إلى الإنجليزية';
+      langToggle.querySelector('span').setAttribute('data-en', isArabic ? 'Switch to Arabic' : 'Switch to English');
+      renderTasks(currentPage);
+    });
+
+    // Sidebar Toggle
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    function toggleSidebarState() {
+      sidebar.classList.toggle('active');
+      sidebarOverlay.classList.toggle('active');
+    }
+    toggleSidebar.addEventListener('click', toggleSidebarState);
+    sidebarOverlay.addEventListener('click', toggleSidebarState);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('active')) toggleSidebarState();
+    });
+
+    // Notifications
+    function showNotification(message, type) {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      setTimeout(() => notification.remove(), 3000);
+    }
+
+    // Normalize Arabic Text
+    function normalizeArabic(text) {
+      return text
+        ?.replace(/[أإآ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/[ًٌٍَُِّْ]/g, '')
+        .toLowerCase() || '';
+    }
+
+    // Tasks Data
+    const initialTasks = [
+      { id: 1, description: "متابعة فيديو المراقبة", reportId: "1", status: "قيد التنفيذ", priority: "عالية", assignee: "النقيب خالد محمود", assignedDate: "2025-04-30", dueDate: "2025-05-02", activityLog: [{ action: "تم تكليف المهمة", date: "2025-04-30" }], isUrgent: true },
+      { id: 2, description: "الرد على الشكوى الإدارية", reportId: "5", status: "مفتوحة", priority: "متوسطة", assignee: "الملازم سامي عبد الله", assignedDate: "2025-04-30", dueDate: "2025-05-01", activityLog: [{ action: "تم تكليف المهمة", date: "2025-04-30" }], isUrgent: false },
+      { id: 3, description: "أرشفة وثائق البلاغ", reportId: "6", status: "مكتملة", priority: "منخفضة", assignee: "أحمد يوسف النجار", assignedDate: "2025-04-28", dueDate: "2025-04-28", activityLog: [{ action: "تم إكمال المهمة", date: "2025-04-28" }], isUrgent: false }
+    ];
+    let tasks = JSON.parse(localStorage.getItem('tasks') || JSON.stringify(initialTasks));
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+
+    // Assignees List
+    const initialAssignees = [
+      "النقيب خالد محمود", "الملازم سامي عبد الله", "أحمد يوسف النجار", "محمد حسن أبو علي", "فريق الدعم السريع",
+      "الرائد علي حسين", "الملازم أول زيد عمر", "ياسر محمود خليل", "إبراهيم صالح", "فريق التحقيق الميداني"
+    ];
+    let assignees = JSON.parse(localStorage.getItem('assignees') || JSON.stringify(initialAssignees));
+    localStorage.setItem('assignees', JSON.stringify(assignees));
+
+    function populateAssigneeDropdown() {
+      const assigneeSelect = document.getElementById('filter-assignee');
+      assigneeSelect.innerHTML = '<option value="">كل الجهات المكلفة</option>' + assignees.map(a => `<option value="${a}">${a}</option>`).join('');
+    }
+    populateAssigneeDropdown();
+
+    // Check Delayed Tasks
+    function updateDelayedTasks() {
+      const today = new Date().toISOString().split('T')[0];
+      tasks = tasks.map(task => {
+        if (task.status !== 'مكتملة' && task.dueDate < today) {
+          return { ...task, status: 'متأخرة', isUrgent: true, activityLog: [...task.activityLog, { action: 'تصنيف كمتأخرة', date: today }] };
+        }
+        return task;
+      });
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    // Task Generation
+    function generateTasksFromReports() {
+      const reports = JSON.parse(localStorage.getItem('reports') || '[]');
+      const today = new Date().toISOString().split('T')[0];
+      const priorityMap = { 'جنائي': 'عالية', 'مرور': 'متوسطة', 'مخالفات': 'منخفضة', 'إداري': 'منخفضة', 'آخر': 'متوسطة' };
+      const assigneeMap = { 'جنائي': 'فريق التحقيق الميداني', 'مرور': 'فريق الدعم السريع', 'مخالفات': 'الملازم أول زيد عمر', 'إداري': 'أحمد يوسف النجار', 'آخر': 'النقيب خالد محمود' };
+      const newTasks = reports
+        .filter(report => !report.archived && report.status === 'مفتوح' && !tasks.some(task => task.reportId === report.id.toString()))
+        .map(report => ({
+          id: Date.now() + report.id,
+          description: `متابعة بلاغ: ${report.title}`,
+          reportId: report.id.toString(),
+          status: 'مفتوحة',
+          priority: priorityMap[report.type] || 'متوسطة',
+          assignee: assigneeMap[report.type] || assignees[Math.floor(Math.random() * assignees.length)],
+          assignedDate: today,
+          dueDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
+          activityLog: [{ action: 'إنشاء تلقائي', date: today }],
+          isUrgent: report.type === 'جنائي'
+        }));
+      if (newTasks.length) {
+        tasks = [...tasks, ...newTasks];
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        showNotification(document.documentElement.lang === 'en' ? 'Tasks synchronized!' : 'تم مزامنة المهام!', 'success');
+      } else {
+        showNotification(document.documentElement.lang === 'en' ? 'No new tasks.' : 'لا توجد مهام جديدة.', 'error');
+      }
+      renderTasks(currentPage);
+    }
+
+    // Render Tasks
+    const tasksTableBody = document.getElementById('tasks-body');
+    const pagination = document.getElementById('pagination');
+    const itemsPerPage = 10;
+    let currentPage = 1;
+
+    function renderTasks(page) {
+      updateDelayedTasks();
+      tasksTableBody.innerHTML = '';
+      const searchTerm = normalizeArabic(document.getElementById('search-input').value);
+      const filterStatus = document.getElementById('filter-status').value;
+      const filterPriority = document.getElementById('filter-priority').value;
+      const filterAssignee = document.getElementById('filter-assignee').value;
+      const filterReportType = document.getElementById('filter-report-type').value;
+      const reports = JSON.parse(localStorage.getItem('reports') || '[]');
+
+      const filteredTasks = tasks.filter(task => {
+        const report = reports.find(r => r.id.toString() === task.reportId);
+        return (
+          (normalizeArabic(task.id.toString()).includes(searchTerm) ||
+           normalizeArabic(task.description).includes(searchTerm) ||
+           normalizeArabic(task.assignee).includes(searchTerm) ||
+           normalizeArabic(report?.location || '').includes(searchTerm)) &&
+          (!filterStatus || task.status === filterStatus) &&
+          (!filterPriority || task.priority === filterPriority) &&
+          (!filterAssignee || task.assignee === filterAssignee) &&
+          (!filterReportType || (report && report.type === filterReportType))
+        );
+      });
+
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const paginatedTasks = filteredTasks.slice(start, end);
+
+      if (!paginatedTasks.length) {
+        tasksTableBody.innerHTML = `<tr><td colspan="12" class="text-center text-gray-600 dark:text-gray-300">${document.documentElement.lang === 'en' ? 'No tasks available.' : 'لا توجد مهام.'}</td></tr>`;
+        return;
+      }
+
+      const translations = {
+        status: { 'مفتوحة': 'Open', 'قيد التنفيذ': 'In Progress', 'مكتملة': 'Completed', 'متأخرة': 'Delayed' },
+        priority: { 'عالية': 'High', 'متوسطة': 'Medium', 'منخفضة': 'Low' },
+        reportType: { 'مرور': 'Traffic', 'جنائي': 'Criminal', 'مخالفات': 'Violations', 'إداري': 'Administrative', 'آخر': 'Other' }
+      };
+
+      paginatedTasks.forEach(task => {
+        const report = reports.find(r => r.id.toString() === task.reportId) || { type: 'غير معروف', location: 'غير محدد' };
+        const progress = Math.min((task.activityLog.length / 5) * 100, 100);
+        const row = document.createElement('tr');
+        row.className = task.isUrgent ? 'urgent-task' : '';
+        row.innerHTML = `
+          <td>${task.id}</td>
+          <td>${task.description}</td>
+          <td>${task.reportId}</td>
+          <td>${document.documentElement.lang === 'en' ? translations.reportType[report.type] || report.type : report.type}</td>
+          <td>${report.location}</td>
+          <td><span class="px-2 py-1 rounded-full text-sm status-${task.status === 'مفتوحة' ? 'open' : task.status === 'قيد التنفيذ' ? 'in-progress' : task.status === 'مكتملة' ? 'completed' : 'delayed'}">${document.documentElement.lang === 'en' ? translations.status[task.status] : task.status}</span></td>
+          <td><span class="px-2 py-1 rounded-full text-sm priority-${task.priority === 'عالية' ? 'high' : task.priority === 'متوسطة' ? 'medium' : 'low'}">${document.documentElement.lang === 'en' ? translations.priority[task.priority] : task.priority}</span></td>
+          <td>${task.assignee}</td>
+          <td>${task.assignedDate}</td>
+          <td>${task.dueDate}</td>
+          <td><div class="progress-bar"><div style="width: ${progress}%; background: ${progress === 100 ? '#10B981' : '#FBBF24'}"></div></div></td>
+          <td><button class="btn-primary view-task" data-id="${task.id}"><i class="fas fa-eye"></i> ${document.documentElement.lang === 'en' ? 'View' : 'عرض'}</button></td>
+        `;
+        tasksTableBody.appendChild(row);
+      });
+
+      new Sortable(tasksTableBody, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+          const movedTask = filteredTasks.splice(start + evt.oldIndex, 1)[0];
+          filteredTasks.splice(start + evt.newIndex, 0, movedTask);
+          tasks = filteredTasks.concat(tasks.filter(t => !filteredTasks.includes(t)));
+          localStorage.setItem('tasks', JSON.stringify(tasks));
+          renderTasks(currentPage);
+        }
+      });
+
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
+      if (page > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+        renderTasks(currentPage);
+        return;
+      }
+      for (let i = 1; i <= totalPages; i++) {
+        const button = document.createElement('button');
+        button.textContent = i;
+        button.className = i === page ? 'active' : '';
+        button.addEventListener('click', () => {
+          currentPage = i;
+          renderTasks(currentPage);
+        });
+        pagination.appendChild(button);
+      }
+    }
+
+    // Search and Filter
+    ['search-input', 'filter-status', 'filter-priority', 'filter-assignee', 'filter-report-type'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => {
+        currentPage = 1;
+        renderTasks(currentPage);
+      });
+    });
+
+    // Add Task Modal
+    document.getElementById('add-task').addEventListener('click', () => {
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2 class="text-xl font-bold mb-4" data-en="Create New Task">إنشاء مهمة جديدة</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Task Details">تفاصيل المهمة</label>
+              <input type="text" id="task-description" class="w-full p-2 border rounded" placeholder="أدخل تفاصيل المهمة..." data-en-placeholder="Enter task details..." />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Report ID">معرف البلاغ</label>
+              <input type="text" id="task-report-id" class="w-full p-2 border rounded" placeholder="أدخل معرف البلاغ..." data-en-placeholder="Enter report ID..." />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Priority">مستوى الأولوية</label>
+              <select id="task-priority" class="w-full p-2 border rounded">
+                <option value="منخفضة">منخفضة</option>
+                <option value="متوسطة">متوسطة</option>
+                <option value="عالية">عالية</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Assigned To">الجهة المكلفة</label>
+              <select id="task-assignee" class="w-full p-2 border rounded">${assignees.map(a => `<option value="${a}">${a}</option>`).join('')}</select>
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Deadline">الموعد النهائي</label>
+              <input type="date" id="task-due-date" class="w-full p-2 border rounded" />
+            </div>
+            <div>
+              <label class="block text-gray-700 dark:text-gray-300" data-en="Urgent">عاجلة</label>
+              <input type="checkbox" id="task-urgent" />
+            </div>
+            <div class="flex gap-2">
+              <button id="save-task" class="btn-primary"><i class="fas fa-save"></i> حفظ</button>
+              <button id="cancel-task" class="btn-primary bg-gray-500 hover:bg-gray-600"><i class="fas fa-times"></i> إلغاء</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+
+      document.getElementById('save-task').addEventListener('click', () => {
+        const description = document.getElementById('task-description').value;
+        const reportId = document.getElementById('task-report-id').value || 'غير مرتبط';
+        const priority = document.getElementById('task-priority').value;
+        const assignee = document.getElementById('task-assignee').value;
+        const dueDate = document.getElementById('task-due-date').value;
+        const isUrgent = document.getElementById('task-urgent').checked;
+
+        if (!description || !assignee || !dueDate) {
+          showNotification(document.documentElement.lang === 'en' ? 'All fields required.' : 'جميع الحقول مطلوبة.', 'error');
+          return;
+        }
+
+        const newTask = {
+          id: Date.now(),
+          description,
+          reportId,
+          status: 'مفتوحة',
+          priority,
+          assignee,
+          assignedDate: new Date().toISOString().split('T')[0],
+          dueDate,
+          activityLog: [{ action: 'إنشاء يدوي', date: new Date().toISOString().split('T')[0] }],
+          isUrgent
+        };
+        tasks.push(newTask);
+        if (!assignees.includes(assignee)) {
+          assignees.push(assignee);
+          localStorage.setItem('assignees', JSON.stringify(assignees));
+          populateAssigneeDropdown();
+        }
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        showNotification(document.documentElement.lang === 'en' ? 'Task created!' : 'تم إنشاء المهمة!', 'success');
+        modal.remove();
+        renderTasks(currentPage);
+      });
+
+      document.getElementById('cancel-task').addEventListener('click', () => modal.remove());
+    });
+
+    // View Task Modal
+    tasksTableBody.addEventListener('click', (e) => {
+      if (e.target.classList.contains('view-task') || e.target.closest('.view-task')) {
+        const id = e.target.dataset.id || e.target.closest('.view-task').dataset.id;
+        const task = tasks.find(t => t.id.toString() === id);
+        const report = JSON.parse(localStorage.getItem('reports') || '[]').find(r => r.id.toString() === task.reportId);
+
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4" data-en="Task Details">تفاصيل المهمة</h2>
+            <div class="space-y-4">
+              <p><strong data-en="Task ID:">معرف المهمة:</strong> ${task.id}</p>
+              <p><strong data-en="Details:">التفاصيل:</strong> ${task.description}</p>
+              <p><strong data-en="Report ID:">معرف البلاغ:</strong> ${task.reportId}</p>
+              <p><strong data-en="Report Summary:">ملخص البلاغ:</strong> ${report ? `${report.title} (${report.type}, ${report.location})` : 'غير متوفر'}</p>
+              <p><strong data-en="Status:">الحالة:</strong>
+                <select id="task-status" class="p-2 border rounded">
+                  <option value="مفتوحة" ${task.status === 'مفتوحة' ? 'selected' : ''}>مفتوحة</option>
+                  <option value="قيد التنفيذ" ${task.status === 'قيد التنفيذ' ? 'selected' : ''}>قيد التنفيذ</option>
+                  <option value="مكتملة" ${task.status === 'مكتملة' ? 'selected' : ''}>مكتملة</option>
+                  <option value="متأخرة" ${task.status === 'متأخرة' ? 'selected' : ''}>متأخرة</option>
+                </select>
+              </p>
+              <p><strong data-en="Priority:">الأولوية:</strong> <span class="px-2 py-1 rounded-full text-sm priority-${task.priority === 'عالية' ? 'high' : task.priority === 'متوسطة' ? 'medium' : 'low'}">${task.priority}</span></p>
+              <p><strong data-en="Assigned To:">الجهة المكلفة:</strong>
+                <select id="task-assignee" class="p-2 border rounded">${assignees.map(a => `<option value="${a}" ${task.assignee === a ? 'selected' : ''}>${a}</option>`).join('')}</select>
+              </p>
+              <p><strong data-en="Assignment Date:">تاريخ التكليف:</strong> ${task.assignedDate}</p>
+              <p><strong data-en="Deadline:">الموعد النهائي:</strong> ${task.dueDate}</p>
+              <p><strong data-en="Urgent:">عاجلة:</strong> <input type="checkbox" id="task-urgent" ${task.isUrgent ? 'checked' : ''} /></p>
+              <p><strong data-en="Activity Log:">سجل النشاطات:</strong>
+                <ul class="list-disc mr-4">${task.activityLog.map(log => `<li>${log.action} - ${log.date}</li>`).join('')}</ul>
+              </p>
+              <div class="flex gap-2">
+                <button id="save-changes" class="btn-primary"><i class="fas fa-save"></i> حفظ</button>
+                <button id="close-modal" class="btn-primary bg-gray-500 hover:bg-gray-600"><i class="fas fa-times"></i> إغلاق</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('save-changes').addEventListener('click', () => {
+          const newStatus = document.getElementById('task-status').value;
+          const newAssignee = document.getElementById('task-assignee').value;
+          const isUrgent = document.getElementById('task-urgent').checked;
+
+          if (!newAssignee) {
+            showNotification(document.documentElement.lang === 'en' ? 'Assignee required.' : 'الجهة المكلفة مطلوبة.', 'error');
+            return;
+          }
+
+          tasks = tasks.map(t => t.id === task.id ? {
+            ...t,
+            status: newStatus,
+            assignee: newAssignee,
+            isUrgent,
+            activityLog: [...t.activityLog, { action: `تحديث الحالة إلى ${newStatus}`, date: new Date().toISOString().split('T')[0] }]
+          } : t);
+          if (!assignees.includes(newAssignee)) {
+            assignees.push(newAssignee);
+            localStorage.setItem('assignees', JSON.stringify(assignees));
+            populateAssigneeDropdown();
+          }
+          localStorage.setItem('tasks', JSON.stringify(tasks));
+          showNotification(document.documentElement.lang === 'en' ? 'Task updated!' : 'تم تحديث المهمة!', 'success');
+          modal.remove();
+          renderTasks(currentPage);
+        });
+
+        document.getElementById('close-modal').addEventListener('click', () => modal.remove());
+      }
+    });
+
+    // Sync Tasks
+    document.getElementById('sync-tasks').addEventListener('click', generateTasksFromReports);
+
+    // Performance Analytics
+    document.getElementById('show-analytics').addEventListener('click', () => {
+      const statusCounts = { 'مفتوحة': 0, 'قيد التنفيذ': 0, 'مكتملة': 0, 'متأخرة': 0 };
+      let totalResponseTime = 0, completedTasks = 0;
+
+      tasks.forEach(task => {
+        statusCounts[task.status]++;
+        if (task.status === 'مكتملة') {
+          const assigned = new Date(task.assignedDate);
+          const completedLog = task.activityLog.find(log => log.action.includes('إكمال'));
+          if (completedLog) {
+            totalResponseTime += (new Date(completedLog.date) - assigned) / (1000 * 60 * 60 * 24);
+            completedTasks++;
+          }
+        }
+      });
+
+      const avgResponseTime = completedTasks ? (totalResponseTime / completedTasks).toFixed(2) : 0;
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content">
+          <h2 class="text-xl font-bold mb-4" data-en="Performance Analytics">تحليلات الأداء</h2>
+          <div class="space-y-4">
+            <p><strong data-en="Task Status:">توزيع الحالات:</strong></p>
+            <ul class="list-disc mr-4">${Object.entries(statusCounts).map(([status, count]) => `<li>${status}: ${count} مهمة</li>`).join('')}</ul>
+            <p><strong data-en="Average Response Time:">متوسط زمن الاستجابة:</strong> ${avgResponseTime} يوم</p>
+            <button id="close-analytics" class="btn-primary bg-gray-500 hover:bg-gray-600"><i class="fas fa-times"></i> إغلاق</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      document.getElementById('close-analytics').addEventListener('click', () => modal.remove());
+    });
+
+    // Initial Render
+    renderTasks(currentPage);
+  </script>
+</body>
+</html>
